@@ -1,0 +1,22 @@
+-- Seed Categories
+INSERT INTO categories (name) VALUES 
+('Elektronik'),
+('Komputer & Aksesoris'),
+('Handphone & Aksesoris'),
+('Pakaian Pria'),
+('Sepatu Pria'),
+('Tas Pria'),
+('Perawatan & Kecantikan'),
+('Perlengkapan Rumah'),
+('Pakaian Wanita'),
+('Fashion Muslim'),
+('Fashion Bayi & Anak'),
+('Jam Tangan'),
+('Kesehatan'),
+('Sepatu Wanita'),
+('Tas Wanita'),
+('Otomotif'),
+('Hobi & Koleksi'),     
+('Olahraga & Outdoor'),
+('Buku & Alat Tulis'),
+('Fotografi');
