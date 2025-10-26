@@ -122,12 +122,16 @@ function renderProducts(products) {
     const emptyState = document.getElementById('emptyState');
     if (!products || products.length === 0) {
         grid.innerHTML = '';
-        grid.style.display = 'none';
-        emptyState.style.display = 'block';
+        grid.classList.add('hidden');
+        grid.classList.remove('show-grid');
+        emptyState.classList.remove('hidden');
+        emptyState.classList.add('show');
         return;
     }
-    grid.style.display = 'grid';
-    emptyState.style.display = 'none';
+    grid.classList.remove('hidden');
+    grid.classList.add('show-grid');
+    emptyState.classList.add('hidden');
+    emptyState.classList.remove('show');
     grid.innerHTML = products.map(product => {
         const isOutOfStock = product.stock === 0;
         const cardClass = isOutOfStock ? 'product-card out-of-stock' : 'product-card';
@@ -229,23 +233,45 @@ function showLoading() {
     const loadingState = document.getElementById('loadingProducts');
     const productsGrid = document.getElementById('productsGrid');
     const emptyState = document.getElementById('emptyState');
-    if (loadingState) loadingState.style.display = 'block';
-    if (productsGrid) productsGrid.style.display = 'none';
-    if (emptyState) emptyState.style.display = 'none';
+    
+    if (loadingState) {
+        loadingState.classList.remove('hidden');
+        loadingState.classList.add('show');
+    }
+    if (productsGrid) {
+        productsGrid.classList.add('hidden');
+        productsGrid.classList.remove('show-grid');
+    }
+    if (emptyState) {
+        emptyState.classList.add('hidden');
+        emptyState.classList.remove('show');
+    }
 }
 
 function hideLoading() {
     const loadingState = document.getElementById('loadingProducts');
-    if (loadingState) loadingState.style.display = 'none';
+    if (loadingState) {
+        loadingState.classList.add('hidden');
+        loadingState.classList.remove('show');
+    }
 }
 
 function showEmptyState() {
     const productsGrid = document.getElementById('productsGrid');
     const emptyState = document.getElementById('emptyState');
     const paginationControls = document.getElementById('paginationControls');
-    if (productsGrid) productsGrid.style.display = 'none';
-    if (emptyState) emptyState.style.display = 'block';
-    if (paginationControls) paginationControls.style.display = 'none';
+    
+    if (productsGrid) {
+        productsGrid.classList.add('hidden');
+        productsGrid.classList.remove('show-grid');
+    }
+    if (emptyState) {
+        emptyState.classList.remove('hidden');
+        emptyState.classList.add('show');
+    }
+    if (paginationControls) {
+        paginationControls.classList.add('hidden');
+    }
 }
 
 function formatPrice(price) {

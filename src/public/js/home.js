@@ -129,13 +129,16 @@ function renderProducts(products) {
     const emptyState = document.getElementById('emptyState');
     if (!products || products.length === 0) {
         grid.innerHTML = '';
-        grid.style.display = 'none';
-        emptyState.style.display = 'block';
+        grid.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+        emptyState.classList.add('show');
         return;
     }
 
-    grid.style.display = 'grid';
-    emptyState.style.display = 'none';
+    grid.classList.remove('hidden');
+    grid.classList.add('show-grid');
+    emptyState.classList.add('hidden');
+    emptyState.classList.remove('show');
     grid.innerHTML = products.map(product => {
         const isOutOfStock = product.stock === 0;
         const cardClass = isOutOfStock ? 'product-card out-of-stock' : 'product-card';    
@@ -306,7 +309,8 @@ function renderSuggestions(suggestions) {
         </div>
     `).join('');
 
-    container.style.display = 'block';
+    container.classList.remove('hidden');
+    container.classList.add('show');
 }
 
 function selectSuggestion(productName) {
@@ -320,14 +324,15 @@ function selectSuggestion(productName) {
 function hideSuggestions() {
     const container = document.getElementById('searchSuggestions');
     if (container) {
-        container.style.display = 'none';
+        container.classList.add('hidden');
+        container.classList.remove('show');
     }
 }
 
 // add product to cart
 function addToCart(productId) {
     // TO DO shopping cart
-    // POST /api/cart dengan body: { product_id, quantity: 1 }
+    // POST /api/cart
     const xhr = new XMLHttpRequest();
     xhr.open('POST', '/api/cart', true);
     xhr.setRequestHeader('Content-Type', 'application/json');
@@ -336,45 +341,43 @@ function addToCart(productId) {
             try {
                 const response = JSON.parse(xhr.responseText);
                 if (response.success) {
-                    showNotification('Produk berhasil ditambahkan ke keranjang', 'success');              
-                    // Update cart badge counter
+                    showNotification('Produk berhasil ditambahkan ke keranjang', 'success');
                     updateCartBadge();
                 } else {
-                    showNotification(response.error || 'Gagal menambahkan ke keranjang', 'error');
+                    showNotification(response.error || 'Gagal menambahkan produk', 'error');
                 }
             } catch (error) {
                 showNotification('Terjadi kesalahan', 'error');
             }
-        } else if (xhr.status === 401) {
-            showNotification('Silakan login terlebih dahulu', 'error');
-            setTimeout(() => {
-                window.location.href = '/login';
-            }, 1500);
         } else {
-            showNotification('Gagal menambahkan ke keranjang', 'error');
+            showNotification('Gagal menambahkan produk', 'error');
         }
     };
-    xhr.send(JSON.stringify({
-        product_id: productId,
-        quantity: 1
-    }));
+
+    xhr.send(JSON.stringify({ product_id: productId, quantity: 1 }));
 }
 
-// update cart badge counter
+// update cart badge
 function updateCartBadge() {
-    // TO DO shopping cart
-    // GET /api/cart/count untuk update badge di navbar
     const xhr = new XMLHttpRequest();
     xhr.open('GET', '/api/cart/count', true);
+
     xhr.onload = function() {
         if (xhr.status === 200) {
             try {
                 const response = JSON.parse(xhr.responseText);
                 if (response.success) {
-                    const badge = document.querySelector('.cart-badge');
+                    const badge = document.getElementById('cartBadge');
                     if (badge) {
                         badge.textContent = response.data.count;
-                        badge.style.display = response.data.count > 0 ? 'block' : 'none';
+                        // gunakan class untuk visibility
+                        if (response.data.count > 0) {
+                            badge.classList.remove('hidden');
+                            badge.classList.add('show');
+                        } else {
+                            badge.classList.add('hidden');
+                            badge.classList.remove('show');
+                        }
                     }
                 }
             } catch (error) {
@@ -386,18 +389,44 @@ function updateCartBadge() {
 }
 
 function showLoading() {
-    document.getElementById('loadingProducts').style.display = 'block';
-    document.getElementById('productsGrid').style.display = 'none';
-    document.getElementById('emptyState').style.display = 'none';
+    const loadingState = document.getElementById('loadingProducts');
+    const productsGrid = document.getElementById('productsGrid');
+    const emptyState = document.getElementById('emptyState');
+    
+    if (loadingState) {
+        loadingState.classList.remove('hidden');
+        loadingState.classList.add('show');
+    }
+    if (productsGrid) {
+        productsGrid.classList.add('hidden');
+        productsGrid.classList.remove('show-grid');
+    }
+    if (emptyState) {
+        emptyState.classList.add('hidden');
+        emptyState.classList.remove('show');
+    }
 }
 
 function hideLoading() {
-    document.getElementById('loadingProducts').style.display = 'none';
+    const loadingState = document.getElementById('loadingProducts');
+    if (loadingState) {
+        loadingState.classList.add('hidden');
+        loadingState.classList.remove('show');
+    }
 }
 
 function showEmptyState() {
-    document.getElementById('productsGrid').style.display = 'none';
-    document.getElementById('emptyState').style.display = 'block';
+    const productsGrid = document.getElementById('productsGrid');
+    const emptyState = document.getElementById('emptyState');
+    
+    if (productsGrid) {
+        productsGrid.classList.add('hidden');
+        productsGrid.classList.remove('show-grid');
+    }
+    if (emptyState) {
+        emptyState.classList.remove('hidden');
+        emptyState.classList.add('show');
+    }
 }
 
 // utility functions

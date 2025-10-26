@@ -135,8 +135,10 @@ function updateStatsDisplay(stats) {
 function openEditStoreModal() {
     const modal = document.getElementById('editStoreModal');
     if (modal) {
-        modal.style.display = 'block';
-        document.body.style.overflow = 'hidden';
+        modal.classList.remove('modal-closed', 'hidden');
+        modal.classList.add('modal-open');
+        document.body.classList.remove('allow-scroll');
+        document.body.classList.add('no-scroll');
     }
 }
 
@@ -144,8 +146,10 @@ function openEditStoreModal() {
 function closeEditStoreModal() {
     const modal = document.getElementById('editStoreModal');
     if (modal) {
-        modal.style.display = 'none';
-        document.body.style.overflow = 'auto';
+        modal.classList.remove('modal-open');
+        modal.classList.add('modal-closed', 'hidden');
+        document.body.classList.remove('no-scroll');
+        document.body.classList.add('allow-scroll');
     }
 }
 
@@ -202,8 +206,11 @@ function handleStoreUpdate() {
 
     // disable tombol dan tampilkan loading
     submitBtn.disabled = true;
-    btnText.style.display = 'none';
-    btnLoader.style.display = 'inline';
+    btnText.classList.add('hidden');
+    btnText.classList.remove('show-inline');
+    btnLoader.classList.remove('hidden');
+    btnLoader.classList.add('show-inline');
+    
     const formData = new FormData(form);
     // kirim request menggunakan XMLHttpRequest
     const xhr = new XMLHttpRequest();
@@ -212,8 +219,11 @@ function handleStoreUpdate() {
     xhr.onload = function() {
         // Re-enable tombol
         submitBtn.disabled = false;
-        btnText.style.display = 'inline';
-        btnLoader.style.display = 'none';
+        btnText.classList.remove('hidden');
+        btnText.classList.add('show-inline');
+        btnLoader.classList.add('hidden');
+        btnLoader.classList.remove('show-inline');
+        
         if (xhr.status === 200) {
             try {
                 const response = JSON.parse(xhr.responseText);
@@ -237,8 +247,10 @@ function handleStoreUpdate() {
 
     xhr.onerror = function() {
         submitBtn.disabled = false;
-        btnText.style.display = 'inline';
-        btnLoader.style.display = 'none';
+        btnText.classList.remove('hidden');
+        btnText.classList.add('show-inline');
+        btnLoader.classList.add('hidden');
+        btnLoader.classList.remove('show-inline');
         showNotification('Terjadi kesalahan jaringan', 'error');
     };
 

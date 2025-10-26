@@ -12,7 +12,7 @@ class ProductDiscoveryController extends Controller
         try {
             // load semua kategori untuk filter dropdown
             $categories = $this->categoryModel->all();
-            return $this->view('home', [
+            return $this->view('buyer/home', [
                 'categories' => $categories
             ]);
         } catch (Exception $e) {

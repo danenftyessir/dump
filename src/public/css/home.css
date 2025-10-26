@@ -552,3 +552,15 @@ body {
         grid-template-columns: 1fr;
     }
 }
+
+/* import utility classes */
+@import url('utility.css');
+
+/* override untuk search suggestions visibility */
+.search-suggestions.hidden {
+    display: none !important;
+}
+
+.search-suggestions.show {
+    display: block !important;
+}

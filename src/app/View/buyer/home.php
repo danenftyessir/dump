@@ -4,15 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nimonspedia - Marketplace Untuk Semua Nimons</title>
-    <link rel="stylesheet" href="/public/css/home.css">
+    <link rel="stylesheet" href="/css/home.css">
+    <link rel="stylesheet" href="/css/utility.css">
 </head>
 <body>
-    <!-- TO DO (Fayadh - Navigation Bar & Responsiveness):
+    <!-- TO DO navbar:
          Include navbar responsif untuk semua role:
          - Guest: Logo, Login, Daftar
-         - Buyer: Logo/Home, Cart (dengan badge counter), Balance, User Menu
+         - Buyer: Logo/Home, Cart, Balance, User Menu
          - Seller: Redirect ke dashboard
-         Responsif untuk desktop (1280x768) dan mobile (400x800)
     -->
     <?php // include 'components/navbar.php'; ?>
 
@@ -128,10 +128,7 @@
 
             <!-- Products Grid -->
             <div id="productsGrid" class="products-grid">
-                <!-- TO DO (Farrel - Product Management):
-                     Populate dari endpoint: GET /api/products
-                     Parameter: q, category, min_price, max_price, page, limit
-                     
+                <!-- TO DO:
                      Struktur Product Card:
                      <div class="product-card [out-of-stock jika stock=0]">
                          <a href="/product/{product_id}">
@@ -192,7 +189,7 @@
         </div>
     </div>
 
-    <!-- TO DO (Fayadh - State Indicator): 
+    <!-- TO DO: 
          Include notification/toast component
     -->
 

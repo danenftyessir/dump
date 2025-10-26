@@ -520,3 +520,35 @@ html {
     transform: translateZ(0);
     backface-visibility: hidden;
 }
+
+/* import utility classes */
+@import url('utility.css');
+
+/* loading dan empty state visibility */
+#loadingProducts.hidden {
+    display: none !important;
+}
+
+#loadingProducts.show {
+    display: block !important;
+}
+
+#emptyState.hidden {
+    display: none !important;
+}
+
+#emptyState.show {
+    display: block !important;
+}
+
+#productsGrid.hidden {
+    display: none !important;
+}
+
+#productsGrid.show-grid {
+    display: grid !important;
+}
+
+#paginationControls.hidden {
+    display: none !important;
+}

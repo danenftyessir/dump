@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Nimonspedia</title>
     <link rel="stylesheet" href="/public/css/dashboard.css">
+    <link rel="stylesheet" href="/public/css/utility.css">
 </head>
 <body>
-    <!-- TO DO (Fayadh - Navigation Bar): 
+    <!-- TO DO navbar: 
          Include navbar untuk seller dengan menu:
          - Logo/Home (link ke Dashboard)
          - Navigation menu: Dashboard, Produk, Orders
-         - Store balance display (format: "Balance: Rp 5.000.000")
          - Logout button
     -->
     <?php // include 'components/navbar-seller.php'; ?>
@@ -118,12 +118,12 @@
             </div>
         </div>
 
-        <!-- Recent Activity (Optional Enhancement) -->
-        <!-- TO DO: Implementasi recent activity jika waktu memungkinkan -->
+        <!-- Recent Activity -->
+        <!-- TO DO: Implementasi recent activity -->
     </div>
 
     <!-- Modal Edit Store -->
-    <div id="editStoreModal" class="modal">
+    <div id="editStoreModal" class="modal modal-closed hidden">
         <div class="modal-content">
             <span class="close" onclick="closeEditStoreModal()">&times;</span>
             <h2>Edit Informasi Toko</h2>
@@ -168,21 +168,21 @@
                         Batal
                     </button>
                     <button type="submit" class="btn-primary" id="btnSaveStore">
-                        <span class="btn-text">Simpan Perubahan</span>
-                        <span class="btn-loader" style="display: none;">⏳ Menyimpan...</span>
+                        <span class="btn-text show-inline">Simpan Perubahan</span>
+                        <span class="btn-loader hidden">⏳ Menyimpan...</span>
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- TO DO (Fayadh - State Indicator): 
-         Include notification/toast component untuk success/error messages
+    <!-- TO DO
+         sukses/error toast notification
     -->
 
     <script src="/public/js/dashboard.js"></script>
     
-    <!-- TO DO: Include Quill.js untuk rich text editor -->
+    <!-- TO DO: include Quill.js untuk rich text editor -->
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 </body>

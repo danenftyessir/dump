@@ -518,3 +518,15 @@ html {
     transform: translateZ(0);
     backface-visibility: hidden;
 }
+
+/* import utility classes */
+@import url('utility.css');
+
+/* modal visibility states */
+.modal.modal-closed {
+    display: none !important;
+}
+
+.modal.modal-open {
+    display: block !important;
+}

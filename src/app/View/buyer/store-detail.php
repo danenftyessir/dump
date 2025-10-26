@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($store['store_name'] ?? 'Detail Toko') ?> - Nimonspedia</title>
-    <link rel="stylesheet" href="/public/css/store-detail.css">
+    <link rel="stylesheet" href="/css/utility.css">
+    <link rel="stylesheet" href="/css/store-detail.css">
 </head>
 <body>
     <!-- TO DO: 
@@ -71,7 +72,6 @@
                         >
                         <button class="btn-search">🔍</button>
                     </div>
-
                     <div class="filter-group">
                         <select id="sortBy" class="filter-select">
                             <option value="">Urutkan</option>
