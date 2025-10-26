@@ -11,12 +11,10 @@ class StoreController extends Controller
         $this->userModel = new User();
         $this->orderModel = new Order();
         $this->uploadDir = dirname(dirname(dirname(__DIR__))) . '/public/uploads/stores/';       
-        // buat direktori jika belum ada
         if (!is_dir($this->uploadDir)) {
-            mkdir($this->uploadDir, 0755, true);
+            @mkdir($this->uploadDir, 0755, true);
         }
     }
-
     // membuat toko baru saat registrasi seller
     public function create() {
         try {
@@ -281,8 +279,7 @@ class StoreController extends Controller
     // render halaman dashboard seller
     public function dashboard() {
         try {
-            // pastiin user adalah seller dan udah login
-            session_start();
+            // ambil user dari session (udh di start di index.php)
             $currentUserId = $_SESSION['user']['user_id'] ?? null;            
             if (!$currentUserId) {
                 return $this->redirect('/login');
@@ -309,7 +306,8 @@ class StoreController extends Controller
                 'total_revenue' => $totalRevenue
             ];
 
-            return $this->view('dashboard', [
+            // path view yang benar
+            return $this->view('seller/dashboard', [
                 'store' => $store,
                 'stats' => $stats
             ]);
@@ -318,7 +316,6 @@ class StoreController extends Controller
             return $this->error('Terjadi Kesalahan: ' . $e->getMessage(), 500);
         }
     }
-
     // handle upload logo toko
     private function handleLogoUpload($file) {
         // validasi error upload

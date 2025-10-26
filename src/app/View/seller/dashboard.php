@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Nimonspedia</title>
-    <link rel="stylesheet" href="/public/css/dashboard.css">
-    <link rel="stylesheet" href="/public/css/utility.css">
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="stylesheet" href="/css/utility.css">
 </head>
 <body>
     <!-- TO DO navbar: 

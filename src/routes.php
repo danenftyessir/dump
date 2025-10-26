@@ -38,4 +38,13 @@ $router->get('/api/seller/store/stats', 'StoreController@getStats');
 // halaman dashboard seller
 $router->get('/dashboard', 'StoreController@dashboard');
 
+// routes untuk product management seller
+$router->get('/seller/products', 'ProductController@index');
+$router->get('/api/seller/products', 'ProductController@getSellerProducts');
+$router->get('/seller/products/add', 'ProductController@create');
+$router->post('/api/seller/products', 'ProductController@store');
+$router->get('/seller/products/edit', 'ProductController@edit');
+$router->post('/api/seller/products/update', 'ProductController@update');
+$router->delete('/api/seller/products', 'ProductController@delete');
+
 $router->dispatch();

@@ -95,26 +95,27 @@ class Store extends Model
     public function getTotalProducts($storeId) {
         $sql = "SELECT COUNT(*) as total 
                 FROM products 
-                WHERE store_id = :store_id AND deleted_at IS NULL";
+                WHERE store_id = :store_id 
+                AND deleted_at IS NULL";        
         $stmt = $this->db->prepare($sql);
         $stmt->bindParam(':store_id', $storeId);
-        $stmt->execute();        
+        $stmt->execute();
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        return (int) $result['total'];
+        return $result['total'] ?? 0;
     }
 
-    // hitung produk dengan stok menipis (< threshold)
+    // hitung produk dengan stok menipis
     public function getLowStockProducts($storeId, $threshold = 10) {
         $sql = "SELECT COUNT(*) as total 
                 FROM products 
                 WHERE store_id = :store_id 
-                AND deleted_at IS NULL 
-                AND stock < :threshold";       
+                AND stock < :threshold 
+                AND deleted_at IS NULL";
         $stmt = $this->db->prepare($sql);
         $stmt->bindParam(':store_id', $storeId);
         $stmt->bindParam(':threshold', $threshold);
-        $stmt->execute();
+        $stmt->execute();       
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        return (int) $result['total'];
+        return $result['total'] ?? 0;
     }
 }
