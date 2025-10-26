@@ -10,7 +10,7 @@ class User extends Model
         'role',
         'name',
         'address',
-        'balance',
+        'balance'
     ];
     
     protected $hidden = [
@@ -50,5 +50,46 @@ class User extends Model
         
         $newBalance = $user['balance'] + $amount;
         return $this->update($userId, ['balance' => $newBalance]);
+    }
+
+    // Login User
+    public function login($email, $password) {
+        $user = $this->findByEmail($email);
+        
+        if (!$user || !$this->verifyPassword($password, $user['password'])) {
+            return false;
+        }
+        
+        // Remove password from returned data
+        unset($user['password']);
+        return $user;
+    }
+
+    // Register New User
+    public function register($userData) {
+        // Check if email already exists
+        if ($this->findByEmail($userData['email'])) {
+            throw new Exception('Email already registered');
+        }
+
+        // Validate required fields
+        $required = ['email', 'password', 'name'];
+        foreach ($required as $field) {
+            if (empty($userData[$field])) {
+                throw new Exception("Field '$field' is required");
+            }
+        }
+
+        // Set default values
+        $userData['role'] = $userData['role'] ?? 'BUYER';
+        $userData['balance'] = $userData['balance'] ?? 0;
+
+        return $this->createUser($userData);
+    }
+
+    // Check if User is Seller
+    public function isSeller($userId) {
+        $user = $this->find($userId);
+        return $user && $user['role'] === 'SELLER';
     }
 }

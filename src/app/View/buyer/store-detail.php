@@ -118,10 +118,6 @@
             <!-- Pagination -->
             <div id="paginationControls" class="pagination">
                 <!-- TO DO: implementasi pagination controls
-                     - tombol Previous
-                     - nomor halaman (1, 2, 3, ...)
-                     - tombol Next
-                     - dropdown jumlah item per halaman (4, 8, 12, 20)
                 -->
             </div>
         </div>

@@ -50,7 +50,6 @@ abstract class Controller
     private function getTemplatePath($template) {
         $viewPath = dirname(__DIR__) . '/View';
         
-        // Support both .php and .html extensions
         if (!pathinfo($template, PATHINFO_EXTENSION)) {
             $template .= '.php';
         }
@@ -148,22 +147,50 @@ abstract class Controller
         return $this;
     }
 
-    // Get Current User (Jika Session Ada)
-    protected function user()
-    {
+    // Sanitize Input Data
+    protected function sanitize($input) {
+        if (is_array($input)) {
+            return array_map([$this, 'sanitize'], $input);
+        }
+        
+        if (is_string($input)) {
+            return htmlspecialchars(trim($input), ENT_QUOTES, 'UTF-8');
+        }
+        
+        return $input;
+    }
+
+    // Log Errors
+    protected function logError($message, $context = []) {
+        $timestamp = date('Y-m-d H:i:s');
+        $contextStr = !empty($context) ? json_encode($context) : '';
+        $logMessage = "[$timestamp] ERROR: $message $contextStr" . PHP_EOL;
+        
+        error_log($logMessage, 3, __DIR__ . '/../../logs/app.log');
+    }
+
+    // Log Info
+    protected function logInfo($message, $context = []) {
+        $timestamp = date('Y-m-d H:i:s');
+        $contextStr = !empty($context) ? json_encode($context) : '';
+        $logMessage = "[$timestamp] INFO: $message $contextStr" . PHP_EOL;
+        
+        error_log($logMessage, 3, __DIR__ . '/../../logs/app.log');
+    }
+
+    // Get Current User
+    protected function user() {
         session_start();
         return $_SESSION['user'] ?? null;
     }
 
     // Check if User is Authenticated
-    protected function auth()
-    {
+    protected function auth() {
         return $this->user() !== null;
     }
 
     // Require Authentication
-    protected function requireAuth()
-    {
+    protected function requireAuth() {
         if (!$this->auth()) {
             $this->error('Authentication required', 401);
             exit;
