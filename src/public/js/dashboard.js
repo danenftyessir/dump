@@ -1,58 +1,44 @@
-let quillEditor;
+let quillEditor = null;
+
+// inisialisasi halaman dashboard
 document.addEventListener('DOMContentLoaded', function() {
-    initializeQuillEditor();    
-    loadDashboardStats();
     setupEventListeners();
-});
-
-// inisialisasi quill editor untuk deskripsi toko
-function initializeQuillEditor() {
-    if (typeof Quill !== 'undefined') {
-        quillEditor = new Quill('#storeDescriptionEditor', {
-            theme: 'snow',
-            modules: {
-                toolbar: [
-                    // format text yang aman (sesuai whitelist backend)
-                    ['bold', 'italic', 'underline', 'strike'],
-                    ['blockquote', 'code-block'],
-                    // lists
-                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],                    
-                    // headers
-                    [{ 'header': [1, 2, 3, false] }],
-                    // link: quill akan auto-sanitize link
-                    ['link'],                    
-                    ['clean']
-                ],
-                clipboard: {
-                    matchVisual: false
-                }
-            },
-            placeholder: 'Tulis deskripsi toko Anda...',
-            formats: [
-                'bold', 'italic', 'underline', 'strike',
-                'blockquote', 'code-block',
-                'list', 'bullet',
-                'header',
-                'link'
-            ]
-        });
-
-        // load konten yang ada (sudah di-sanitize dari backend)
-        const existingDescription = document.querySelector('#storeDescription');
-        if (existingDescription && existingDescription.value) {
-            quillEditor.root.innerHTML = existingDescription.value;
-        }
-
-        // limit panjang konten
-        const MAX_LENGTH = 5000;
-        quillEditor.on('text-change', function() {
-            if (quillEditor.getLength() > MAX_LENGTH) {
-                quillEditor.deleteText(MAX_LENGTH, quillEditor.getLength());
-                showNotification('Deskripsi maksimal ' + MAX_LENGTH + ' karakter', 'warning');
+    initializeQuillEditor();
+    loadDashboardStats();
+    
+    // tutup modal jika klik di luar modal content
+    const modal = document.getElementById('editStoreModal');
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeEditStoreModal();
             }
         });
+    }
+});
+
+// inisialisasi quill.js editor untuk deskripsi toko
+function initializeQuillEditor() {
+    if (typeof Quill !== 'undefined') {
+        const editorContainer = document.getElementById('storeDescriptionEditor');
+        if (editorContainer) {
+            quillEditor = new Quill(editorContainer, {
+                theme: 'snow',
+                modules: {
+                    toolbar: [
+                        [{ 'header': [1, 2, 3, false] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        ['blockquote'],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        ['link'],
+                        ['clean']
+                    ]
+                },
+                placeholder: 'Tulis Deskripsi Toko Anda...'
+            });
+        }
     } else {
-        console.error('Quill.js belum dimuat. Pastikan CDN Quill.js tersedia.');
+        console.error('Quill.js Tidak Ditemukan. Pastikan CDN Quill.js Tersedia.');
     }
 }
 
@@ -89,12 +75,8 @@ function setupEventListeners() {
 
 // load statistik dashboard
 function loadDashboardStats() {
-    // TO DO order management fetch data statistik dari endpoint:
-    // GET /api/seller/store/stats   
-    // sementara ini
     const xhr = new XMLHttpRequest();
-    xhr.open('GET', '/api/seller/store/stats', true);
-    
+    xhr.open('GET', '/api/seller/store/stats', true);  
     xhr.onload = function() {
         if (xhr.status === 200) {
             try {
@@ -123,6 +105,7 @@ function updateStatsDisplay(stats) {
         'lowStockProducts': stats.low_stock_products,
         'totalRevenue': formatCurrency(stats.total_revenue)
     };
+    
     for (const [id, value] of Object.entries(elements)) {
         const element = document.getElementById(id);
         if (element) {
@@ -156,149 +139,158 @@ function closeEditStoreModal() {
 // preview gambar logo yang diupload
 function previewLogoImage(event) {
     const file = event.target.files[0];
-    const preview = document.getElementById('logoPreview');   
-    if (!file) {
-        preview.innerHTML = '';
-        return;
-    }
+    if (file) {
+        // validasi ukuran file (max 2MB)
+        const maxSize = 2 * 1024 * 1024;
+        if (file.size > maxSize) {
+            alert('Ukuran File Maksimal 2MB');
+            event.target.value = '';
+            return;
+        }
 
-    // validasi tipe file
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    if (!validTypes.includes(file.type)) {
-        showNotification('Format file harus JPG, JPEG, PNG, atau WEBP', 'error');
-        event.target.value = '';
-        return;
-    }
+        // validasi tipe file
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+        if (!allowedTypes.includes(file.type)) {
+            alert('Tipe File Harus JPG, PNG, atau WEBP');
+            event.target.value = '';
+            return;
+        }
 
-    // validasi ukuran file (max 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-        showNotification('Ukuran file maksimal 2MB', 'error');
-        event.target.value = '';
-        return;
+        // preview image
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const previewContainer = document.getElementById('logoPreview');
+            if (previewContainer) {
+                previewContainer.innerHTML = `
+                    <img src="${e.target.result}" alt="Logo Preview">
+                    <button type="button" class="btn-remove-preview" onclick="removeLogoPreview()">
+                        Hapus Preview
+                    </button>
+                `;
+                previewContainer.style.display = 'block';
+            }
+        };
+        reader.readAsDataURL(file);
     }
-
-    // tampilkan preview
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        preview.innerHTML = `
-            <img src="${e.target.result}" alt="Preview Logo">
-            <p class="preview-filename">${file.name}</p>
-        `;
-    };
-    reader.readAsDataURL(file);
 }
 
-// update informasi toko
+// hapus preview logo
+function removeLogoPreview() {
+    const logoInput = document.getElementById('storeLogo');
+    const previewContainer = document.getElementById('logoPreview');
+    
+    if (logoInput) {
+        logoInput.value = '';
+    }
+    
+    if (previewContainer) {
+        previewContainer.innerHTML = '';
+        previewContainer.style.display = 'none';
+    }
+}
+
+// handle update toko via AJAX
 function handleStoreUpdate() {
-    const form = document.getElementById('editStoreForm');
-    const submitBtn = document.getElementById('btnSaveStore');
-    const btnText = submitBtn.querySelector('.btn-text');
-    const btnLoader = submitBtn.querySelector('.btn-loader');
-    // validasi form
-    if (!validateStoreForm()) {
+    // ambil data dari form
+    const storeName = document.getElementById('storeName').value.trim();
+    
+    // validasi nama toko
+    if (!storeName) {
+        showToast('Nama Toko Tidak Boleh Kosong', 'error');
         return;
     }
-    // ambil data dari Quill editor
-    if (quillEditor) {
-        const descriptionHTML = quillEditor.root.innerHTML;
-        document.getElementById('storeDescription').value = descriptionHTML;
+
+    if (storeName.length > 100) {
+        showToast('Nama Toko Maksimal 100 Karakter', 'error');
+        return;
     }
 
-    // disable tombol dan tampilkan loading
-    submitBtn.disabled = true;
-    btnText.classList.add('hidden');
-    btnText.classList.remove('show-inline');
-    btnLoader.classList.remove('hidden');
-    btnLoader.classList.add('show-inline');
-    
-    const formData = new FormData(form);
-    // kirim request menggunakan XMLHttpRequest
+    // ambil deskripsi dari quill editor
+    let storeDescription = '';
+    if (quillEditor) {
+        storeDescription = quillEditor.root.innerHTML;
+        
+        // cek apakah editor kosong
+        if (quillEditor.getText().trim().length === 0) {
+            storeDescription = '';
+        }
+    }
+
+    // buat FormData untuk kirim file
+    const formData = new FormData();
+    formData.append('store_name', storeName);
+    formData.append('store_description', storeDescription);
+
+    // tambahkan logo jika ada file yang diupload
+    const logoInput = document.getElementById('storeLogo');
+    if (logoInput.files && logoInput.files[0]) {
+        formData.append('store_logo', logoInput.files[0]);
+    }
+
+    // disable tombol submit
+    const submitBtn = document.querySelector('#editStoreForm button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Menyimpan...';
+    }
+
+    // kirim request PATCH via XMLHttpRequest
     const xhr = new XMLHttpRequest();
     xhr.open('PATCH', '/api/my-store', true);
-
+    
     xhr.onload = function() {
-        // Re-enable tombol
-        submitBtn.disabled = false;
-        btnText.classList.remove('hidden');
-        btnText.classList.add('show-inline');
-        btnLoader.classList.add('hidden');
-        btnLoader.classList.remove('show-inline');
-        
+        // enable kembali tombol submit
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Simpan Perubahan';
+        }
+
         if (xhr.status === 200) {
             try {
                 const response = JSON.parse(xhr.responseText);
                 if (response.success) {
-                    showNotification('Informasi toko berhasil diupdate', 'success');
-                    closeEditStoreModal();
-                    // reload halaman untuk menampilkan perubahan
+                    showToast('Toko Berhasil Diupdate', 'success');
+                    
+                    // reload halaman setelah 1 detik untuk update UI
                     setTimeout(() => {
                         window.location.reload();
-                    }, 1500);
+                    }, 1000);
                 } else {
-                    showNotification(response.error || 'Gagal mengupdate toko', 'error');
+                    showToast(response.message || 'Gagal Mengupdate Toko', 'error');
                 }
             } catch (error) {
-                showNotification('Terjadi kesalahan saat memproses response', 'error');
+                showToast('Terjadi Kesalahan Saat Parsing Response', 'error');
             }
         } else {
-            showNotification('Gagal mengupdate toko. Silakan coba lagi.', 'error');
+            try {
+                const response = JSON.parse(xhr.responseText);
+                showToast(response.message || 'Gagal Mengupdate Toko', 'error');
+            } catch (error) {
+                showToast('Terjadi Kesalahan Server', 'error');
+            }
         }
     };
-
+    
     xhr.onerror = function() {
-        submitBtn.disabled = false;
-        btnText.classList.remove('hidden');
-        btnText.classList.add('show-inline');
-        btnLoader.classList.add('hidden');
-        btnLoader.classList.remove('show-inline');
-        showNotification('Terjadi kesalahan jaringan', 'error');
+        // enable kembali tombol submit
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Simpan Perubahan';
+        }
+        showToast('Terjadi Kesalahan Koneksi', 'error');
     };
-
+    
     xhr.send(formData);
 }
 
-// validasi form toko
-function validateStoreForm() {
-    const storeName = document.getElementById('storeName').value.trim();    
-    if (!storeName) {
-        showNotification('Nama toko tidak boleh kosong', 'error');
-        return false;
-    }
-    if (storeName.length > 100) {
-        showNotification('Nama toko maksimal 100 karakter', 'error');
-        return false;
-    }
-    if (quillEditor) {
-        const description = quillEditor.getText().trim();
-        if (!description || description.length < 10) {
-            showNotification('Deskripsi toko minimal 10 karakter', 'error');
-            return false;
-        }
-    }
-
-    return true;
-}
-
+// format angka ke format mata uang rupiah
 function formatCurrency(amount) {
-    return new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        minimumFractionDigits: 0
-    }).format(amount);
+    return 'Rp ' + parseInt(amount).toLocaleString('id-ID');
 }
 
-// munculin notif
-function showNotification(message, type = 'info') {
-    // TO DO Implementasi notification/toast component
-    // sementara gunakan alert
-    console.log(`[${type.toUpperCase()}] ${message}`);
+// tampilkan toast notification
+function showToast(message, type = 'info') {
+    // TO DO implementasi toast notification dengan animasi smooth
+    // untuk sementara gunakan alert
     alert(message);
 }
-
-// close modal ketika klik di luar modal
-window.onclick = function(event) {
-    const modal = document.getElementById('editStoreModal');
-    if (event.target === modal) {
-        closeEditStoreModal();
-    }
-};

@@ -103,7 +103,7 @@ class Store extends Model
         return (int) $result['total'];
     }
 
-    // hitung produk dengan stok menipis (< 10)
+    // hitung produk dengan stok menipis (< threshold)
     public function getLowStockProducts($storeId, $threshold = 10) {
         $sql = "SELECT COUNT(*) as total 
                 FROM products 
@@ -117,8 +117,4 @@ class Store extends Model
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         return (int) $result['total'];
     }
-
-    // TO DO method buat dapetin statistik order toko:
-    // - getPendingOrdersCount($storeId)
-    // - getTotalRevenue($storeId) 
 }
