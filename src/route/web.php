@@ -28,8 +28,8 @@ $router->get('/profile', 'AuthController@profile')->middleware('auth');
 
 // Seller Dashboard
 $router->get('/seller/dashboard', function() {
-    echo "<h1>Dashboard Seller</h1>";
-})->middleware(['auth', 'seller']);
+    echo "<h1>Selamat Datang di Dashboard Seller!</h1>"; // Todo buat halaman dashboard seller
+});
 
 // Debugging
 $router->get('/clear-session', 'AuthController@clearSession');

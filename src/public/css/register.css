@@ -172,6 +172,11 @@ body {
     padding-right: 40px;
 }
 
+.input-group input.is-invalid,
+.input-group textarea.is-invalid {
+    border-color: #dc3545 !important;
+}
+
 .register-btn {
     display: inline-block;
     padding: 8px 20px;
@@ -264,6 +269,13 @@ body {
     animation: spin 1s linear infinite;
     margin-right: 8px; 
     vertical-align: middle; 
+}
+
+.error-message {
+    color: #dc3545;
+    font-size: 0.8rem;
+    margin-top: 4px;
+    display: block;
 }
 
 @keyframes spin {

@@ -1,5 +1,3 @@
-// public/js/register.js
-
 document.addEventListener('DOMContentLoaded', function() {
     const roleBuyer = document.getElementById('role_buyer');
     const roleSeller = document.getElementById('role_seller');

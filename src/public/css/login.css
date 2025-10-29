@@ -199,6 +199,13 @@ body {
     vertical-align: middle; 
 }
 
+.error-message {
+    color: #dc3545;
+    font-size: 0.8rem;
+    margin-top: 4px;
+    display: block;
+}
+
 @keyframes spin {
     to { transform: rotate(360deg); }
 }

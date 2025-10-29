@@ -3,6 +3,7 @@
 $token = $_token ?? '';
 $errorMessage = $errorMessage ?? null;
 $successMessage = $successMessage ?? null;
+$errors = $errors ?? [];
 $oldInput = $oldInput ?? [];
 $emailInput = $oldInput['email'] ?? '';
 ?>
@@ -54,12 +55,18 @@ $emailInput = $oldInput['email'] ?? '';
                     <i class="fas fa-envelope icon"></i>
                     <input type="email" name="email" placeholder="Masukkan Email Anda" required
                            value="<?php echo htmlspecialchars($emailInput); ?>">
+                    <?php if (isset($errors['email'])): ?>
+                        <span class="error-message"><?php echo htmlspecialchars($errors['email']); ?></span>
+                    <?php endif; ?>
                 </div>
                 
                 <div class="input-group password-group">
                     <i class="fas fa-lock icon"></i>
                     <input type="password" name="password" id="password" placeholder="Masukkan Kata Sandi" required>
                     <i class="fas fa-eye password-toggle" id="passwordToggleIcon" onclick="togglePassword()"></i>
+                    <?php if (isset($errors['password'])): ?>
+                        <span class="error-message"><?php echo htmlspecialchars($errors['password']); ?></span>
+                    <?php endif; ?>
                 </div>
 
                 <button type="submit" class="login-btn" id="submitBtn">

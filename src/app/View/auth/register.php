@@ -1,10 +1,9 @@
 <?php
-// app/View/auth/register.php
 
-// Ambil variabel dari Controller
 $token = $_token ?? '';
 $errorMessage = $errorMessage ?? null;
 $successMessage = $successMessage ?? null;
+$errors = $errors ?? [];
 $oldInput = $oldInput ?? [];
 ?>
 
@@ -38,18 +37,27 @@ $oldInput = $oldInput ?? [];
                         <label for="email">Email</label>
                         <input type="email" id="email" name="email" placeholder="Masukkan Email" required
                                value="<?php echo htmlspecialchars($oldInput['email'] ?? ''); ?>">
+                        <?php if (isset($errors['email'])): ?>
+                            <span class="error-message"><?php echo htmlspecialchars($errors['email']); ?></span>
+                        <?php endif; ?>
                     </div>
 
                     <div class="input-group password-group">
                         <label for="password">Password</label>
                         <input type="password" id="password" name="password" placeholder="Minimal 8 karakter" required>
                         <i class="fas fa-eye password-toggle" id="passwordToggleIcon" onclick="togglePassword('password', 'passwordToggleIcon')"></i>
+                        <?php if (isset($errors['password'])): ?>
+                             <span class="error-message"><?php echo htmlspecialchars($errors['password']); ?></span>
+                        <?php endif; ?>
                     </div>
 
                     <div class="input-group password-group">
                         <label for="password_confirm">Konfirmasi Password</label>
                         <input type="password" id="password_confirm" name="password_confirm" placeholder="Ulangi Password" required>
                         <i class="fas fa-eye password-toggle" id="confirmPasswordToggleIcon" onclick="togglePassword('password_confirm', 'confirmPasswordToggleIcon')"></i>
+                        <?php if (isset($errors['password_confirm'])): ?>
+                             <span class="error-message"><?php echo htmlspecialchars($errors['password_confirm']); ?></span>
+                        <?php endif; ?>
                     </div>
 
                     <div class="input-group role-selection">
@@ -62,6 +70,9 @@ $oldInput = $oldInput ?? [];
                             <input type="radio" id="role_seller" name="role" value="SELLER" <?php echo (isset($oldInput['role']) && $oldInput['role'] === 'SELLER') ? 'checked' : ''; ?>>
                             <label for="role_seller">Seller</label>
                         </div>
+                        <?php if (isset($errors['role'])): ?>
+                             <span class="error-message"><?php echo htmlspecialchars($errors['role']); ?></span>
+                        <?php endif; ?>
                     </div>
             </div>
 
@@ -86,6 +97,9 @@ $oldInput = $oldInput ?? [];
                         <label for="name">Nama</label>
                         <input type="text" id="name" name="name" placeholder="Masukkan Nama Lengkap" required
                                value="<?php echo htmlspecialchars($oldInput['name'] ?? ''); ?>">
+                        <?php if (isset($errors['name'])): ?>
+                            <span class="error-message"><?php echo htmlspecialchars($errors['name']); ?></span>
+                        <?php endif; ?>
                     </div>
 
                     <div class="input-group">

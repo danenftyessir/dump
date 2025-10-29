@@ -32,12 +32,14 @@ class AuthController extends Controller
     public function loginForm() {
         $errorMessage = $this->authService->getFlashMessage('error');
         $successMessage = $this->authService->getFlashMessage('success');
+        $errors = $this->authService->getFlashMessage('errors') ?? [];
         $oldInput = $this->authService->getFlashMessage('old_input') ?? [];
 
         $this->view('auth/login', [
             '_token' => $this->csrfService->getToken(),
             'errorMessage' => $errorMessage, 
             'successMessage' => $successMessage,
+            'errors' => $errors,
             'oldInput' => $oldInput
         ]);
     }
@@ -67,13 +69,15 @@ class AuthController extends Controller
 
             // Redirect berdasarkan Role
             if ($user['role'] === 'SELLER') {
-                $this->redirect('/dashboard');
+                $this->redirect('/seller/dashboard');
             } else {
                 $this->redirect('/');
             }
 
         } catch (ValidationException $e) {
             $this->authService->setFlashMessage('error', $e->getMessage());
+            $this->authService->setFlashMessage('errors', $e->getErrors());
+            $this->authService->setFlashMessage('old_input', $loginData);
             $this->redirect('/login');
         } catch (Exception $e) {
             // Write log error
@@ -91,13 +95,17 @@ class AuthController extends Controller
     public function registerForm() {
         $errorMessage = $this->authService->getFlashMessage('error');
         $successMessage = $this->authService->getFlashMessage('success');
+        $errors = $this->authService->getFlashMessage('errors') ?? [];
         $oldInput = $this->authService->getFlashMessage('old_input') ?? [];
+
+
 
         // 2. Mengirim data ke View
         $this->view('auth/register', [
             '_token' => $this->csrfService->getToken(),
             'errorMessage' => $errorMessage,
             'successMessage' => $successMessage,
+            'errors' => $errors,
             'oldInput' => $oldInput
         ]);
     }
@@ -114,7 +122,7 @@ class AuthController extends Controller
                 'password_confirm' => $_POST['password_confirm'] ?? '',
                 'role' => $_POST['role'] ?? 'BUYER' // Ambil role dari form, default BUYER
             ];
-
+            
             // Validasi Input
             $this->validator->validateRegistration($userData);
 
@@ -130,6 +138,8 @@ class AuthController extends Controller
 
         } catch (ValidationException $e) {
             $this->authService->setFlashMessage('error', $e->getMessage());
+            $this->authService->setFlashMessage('errors', $e->getErrors());
+            $this->authService->setFlashMessage('old_input', $userData);
             $this->redirect('/register');
         } catch (Exception $e) {
             // Write log error
@@ -148,7 +158,7 @@ class AuthController extends Controller
     public function dashboard() {
         $user = $this->authService->getCurrentUser();
         if ($user['role'] === 'SELLER') {
-            $this->redirect('/dashboard');
+            $this->redirect('/seller/dashboard');
         } else {
             $this->redirect('/');
         }
