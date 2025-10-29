@@ -1,5 +1,4 @@
 <?php
-// pastikan ada data store dan stats dari controller
 $store = $store ?? null;
 $stats = $stats ?? [
     'total_products' => 0,
@@ -50,7 +49,12 @@ $stats = $stats ?? [
                     <!-- total products -->
                     <div class="stat-card card-primary">
                         <div class="stat-icon-wrapper">
-                            <img src="/asset/icon-box.svg" alt="Products" class="stat-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stat-icon">
+                                <path d="M16.5 9.4l-9-5.19"/>
+                                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                                <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                                <line x1="12" y1="22.08" x2="12" y2="12"/>
+                            </svg>
                         </div>
                         <div class="stat-content">
                             <p class="stat-label">Total Produk</p>
@@ -62,39 +66,42 @@ $stats = $stats ?? [
                     <!-- pending orders -->
                     <div class="stat-card card-warning">
                         <div class="stat-icon-wrapper">
-                            <img src="/asset/icon-clock.svg" alt="Pending" class="stat-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stat-icon">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polyline points="12 6 12 12 16 14"/>
+                            </svg>
                         </div>
                         <div class="stat-content">
                             <p class="stat-label">Pesanan Menunggu</p>
                             <h3 class="stat-value"><?= number_format($stats['pending_orders']) ?></h3>
-                            <?php if ($stats['pending_orders'] > 0): ?>
-                                <span class="stat-badge badge-urgent">Perlu Ditindaklanjuti</span>
-                            <?php else: ?>
-                                <span class="stat-badge badge-ok">Semua Terkelola</span>
-                            <?php endif; ?>
+                            <a href="/seller/orders?status=waiting_approval" class="stat-link">Lihat Pesanan →</a>
                         </div>
                     </div>
 
-                    <!-- low stock warning -->
+                    <!-- low stock products -->
                     <div class="stat-card card-danger">
                         <div class="stat-icon-wrapper">
-                            <img src="/asset/icon-alert.svg" alt="Alert" class="stat-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stat-icon">
+                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                                <line x1="12" y1="9" x2="12" y2="13"/>
+                                <line x1="12" y1="17" x2="12.01" y2="17"/>
+                            </svg>
                         </div>
                         <div class="stat-content">
                             <p class="stat-label">Stok Menipis</p>
                             <h3 class="stat-value"><?= number_format($stats['low_stock_products']) ?></h3>
-                            <?php if ($stats['low_stock_products'] > 0): ?>
-                                <a href="/seller/products?filter=low_stock" class="stat-link">Lihat Detail →</a>
-                            <?php else: ?>
-                                <span class="stat-badge badge-ok">Stok Aman</span>
-                            <?php endif; ?>
+                            <p class="stat-sublabel">Produk < 10 Stok</p>
                         </div>
                     </div>
 
                     <!-- total revenue -->
                     <div class="stat-card card-success">
                         <div class="stat-icon-wrapper">
-                            <img src="/asset/icon-chart.svg" alt="Revenue" class="stat-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stat-icon">
+                                <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/>
+                                <path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/>
+                                <path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/>
+                            </svg>
                         </div>
                         <div class="stat-content">
                             <p class="stat-label">Total Pendapatan</p>
@@ -111,7 +118,11 @@ $stats = $stats ?? [
                 <div class="actions-grid">
                     <a href="/seller/products/add" class="action-card">
                         <div class="action-icon">
-                            <img src="/asset/icon-add-product.svg" alt="Add Product">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="12" y1="8" x2="12" y2="16"/>
+                                <line x1="8" y1="12" x2="16" y2="12"/>
+                            </svg>
                         </div>
                         <h3 class="action-title">Tambah Produk</h3>
                         <p class="action-desc">Upload produk baru ke toko Anda</p>
@@ -119,7 +130,12 @@ $stats = $stats ?? [
 
                     <a href="/seller/products" class="action-card">
                         <div class="action-icon">
-                            <img src="/asset/icon-manage.svg" alt="Manage">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M16.5 9.4l-9-5.19"/>
+                                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                                <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                                <line x1="12" y1="22.08" x2="12" y2="12"/>
+                            </svg>
                         </div>
                         <h3 class="action-title">Kelola Produk</h3>
                         <p class="action-desc">Edit, hapus, atau perbarui stok produk</p>
@@ -127,7 +143,11 @@ $stats = $stats ?? [
 
                     <a href="/seller/orders" class="action-card">
                         <div class="action-icon">
-                            <img src="/asset/icon-orders.svg" alt="Orders">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                                <line x1="3" y1="6" x2="21" y2="6"/>
+                                <path d="M16 10a4 4 0 0 1-8 0"/>
+                            </svg>
                         </div>
                         <h3 class="action-title">Kelola Pesanan</h3>
                         <p class="action-desc">Proses pesanan dari pembeli</p>
@@ -135,7 +155,10 @@ $stats = $stats ?? [
 
                     <button onclick="openEditStoreModal()" class="action-card">
                         <div class="action-icon">
-                            <img src="/asset/icon-settings.svg" alt="Settings">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
                         </div>
                         <h3 class="action-title">Pengaturan Toko</h3>
                         <p class="action-desc">Edit informasi dan logo toko</p>
@@ -152,7 +175,13 @@ $stats = $stats ?? [
                             <?= $store['store_description'] ?>
                         <?php else: ?>
                             <div class="empty-state-inline">
-                                <img src="/asset/empty-description.svg" alt="Empty" class="empty-icon-small">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 280 280" fill="none" class="empty-icon-small">
+                                    <circle cx="140" cy="140" r="120" fill="#F3F4F6" opacity="0.5"/>
+                                    <rect x="60" y="90" width="160" height="120" rx="12" fill="white" stroke="#D1D5DB" stroke-width="2"/>
+                                    <path d="M90 120h100M90 140h120M90 160h80M90 180h100" stroke="#E5E7EB" stroke-width="3" stroke-linecap="round"/>
+                                    <circle cx="140" cy="230" r="25" fill="#F59E0B" opacity="0.1"/>
+                                    <path d="M140 220v10M140 235h.01" stroke="#F59E0B" stroke-width="2.5" stroke-linecap="round"/>
+                                </svg>
                                 <p class="empty-text">Belum ada deskripsi toko. Tambahkan deskripsi untuk menarik lebih banyak pembeli.</p>
                                 <button onclick="openEditStoreModal()" class="btn-secondary-small">Tambah Deskripsi</button>
                             </div>
@@ -168,7 +197,12 @@ $stats = $stats ?? [
         <div class="modal-content">
             <div class="modal-header">
                 <h2>Edit Informasi Toko</h2>
-                <button class="modal-close" onclick="closeEditStoreModal()">&times;</button>
+                <button class="modal-close" onclick="closeEditStoreModal()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
             </div>
             <div class="modal-body">
                 <form id="editStoreForm" enctype="multipart/form-data">

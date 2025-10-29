@@ -7,7 +7,11 @@ $currentPage = $_SERVER['REQUEST_URI'] ?? '/';
     <div class="navbar-container">
         <!-- brand -->
         <a href="/seller/dashboard" class="navbar-brand">
-            <img src="/asset/nimonspedia-logo.svg" alt="Nimonspedia" class="navbar-logo">
+            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none" class="navbar-logo">
+                <circle cx="20" cy="20" r="18" fill="#10B981"/>
+                <path d="M20 10L28 15V25L20 30L12 25V15L20 10Z" fill="white"/>
+                <path d="M20 10V20M12 15L20 20L28 15" stroke="#10B981" stroke-width="1.5"/>
+            </svg>
             <span class="navbar-brand-text">
                 Nimon<span class="highlight">spedia</span>
             </span>
@@ -17,19 +21,33 @@ $currentPage = $_SERVER['REQUEST_URI'] ?? '/';
         <ul class="navbar-menu" id="navbarMenu">
             <li>
                 <a href="/seller/dashboard" class="navbar-link <?= strpos($currentPage, '/seller/dashboard') === 0 ? 'active' : '' ?>">
-                    <img src="/asset/icon-dashboard.svg" alt="Dashboard" class="navbar-link-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="navbar-link-icon">
+                        <rect x="3" y="3" width="7" height="7" rx="1"/>
+                        <rect x="14" y="3" width="7" height="7" rx="1"/>
+                        <rect x="3" y="14" width="7" height="7" rx="1"/>
+                        <rect x="14" y="14" width="7" height="7" rx="1"/>
+                    </svg>
                     <span>Dashboard</span>
                 </a>
             </li>
             <li>
                 <a href="/seller/products" class="navbar-link <?= strpos($currentPage, '/seller/products') === 0 ? 'active' : '' ?>">
-                    <img src="/asset/icon-products.svg" alt="Products" class="navbar-link-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="navbar-link-icon">
+                        <path d="M16.5 9.4l-9-5.19"/>
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                        <line x1="12" y1="22.08" x2="12" y2="12"/>
+                    </svg>
                     <span>Produk</span>
                 </a>
             </li>
             <li>
                 <a href="/seller/orders" class="navbar-link <?= strpos($currentPage, '/seller/orders') === 0 ? 'active' : '' ?>">
-                    <img src="/asset/icon-orders.svg" alt="Orders" class="navbar-link-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="navbar-link-icon">
+                        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                        <line x1="3" y1="6" x2="21" y2="6"/>
+                        <path d="M16 10a4 4 0 0 1-8 0"/>
+                    </svg>
                     <span>Pesanan</span>
                 </a>
             </li>
@@ -40,7 +58,11 @@ $currentPage = $_SERVER['REQUEST_URI'] ?? '/';
             <!-- balance display (desktop only) -->
             <?php if ($currentUser): ?>
                 <div class="navbar-balance">
-                    <img src="/asset/icon-wallet.svg" alt="Balance" style="width: 20px; height: 20px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/>
+                        <path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/>
+                        <path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/>
+                    </svg>
                     <span>Rp <?= number_format($currentUser['balance'] ?? 0) ?></span>
                 </div>
             <?php endif; ?>
@@ -52,137 +74,58 @@ $currentPage = $_SERVER['REQUEST_URI'] ?? '/';
                         <?= strtoupper(substr($currentUser['name'] ?? 'U', 0, 1)) ?>
                     </div>
                     <span class="navbar-user-name"><?= htmlspecialchars($currentUser['name'] ?? 'User') ?></span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="dropdown-icon">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
                 </div>
-
-                <!-- dropdown menu (akan ditambahkan via JavaScript) -->
-                <div id="userDropdown" class="user-dropdown" style="display: none;">
-                    <a href="/profile" class="dropdown-item">
-                        <img src="/asset/icon-user.svg" alt="Profile">
-                        <span>Profil Saya</span>
-                    </a>
-                    <a href="/" class="dropdown-item">
-                        <img src="/asset/icon-home.svg" alt="Home">
-                        <span>Kembali Ke Beranda</span>
-                    </a>
-                    <div class="dropdown-divider"></div>
-                    <form action="/logout" method="POST" style="margin: 0;">
-                        <input type="hidden" name="_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
-                        <button type="submit" class="dropdown-item dropdown-logout">
-                            <img src="/asset/icon-logout.svg" alt="Logout">
+                
+                <!-- dropdown menu -->
+                <div id="userDropdownMenu" class="user-dropdown" style="display: none;">
+                    <form action="/logout" method="POST" style="width: 100%;">
+                        <button type="submit" class="dropdown-item logout-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                                <polyline points="16 17 21 12 16 7"/>
+                                <line x1="21" y1="12" x2="9" y2="12"/>
+                            </svg>
                             <span>Keluar</span>
                         </button>
                     </form>
                 </div>
             <?php endif; ?>
 
-            <!-- mobile menu toggle -->
-            <button class="navbar-toggle" onclick="toggleNavbarMenu()" aria-label="Toggle menu">
-                <span></span>
-                <span></span>
-                <span></span>
+            <!-- hamburger mobile -->
+            <button class="navbar-toggle" onclick="toggleMobileMenu()" aria-label="Toggle Menu">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="12" x2="21" y2="12"/>
+                    <line x1="3" y1="6" x2="21" y2="6"/>
+                    <line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
             </button>
         </div>
     </div>
 </nav>
 
-<!-- user dropdown styles -->
-<style>
-.user-dropdown {
-    position: absolute;
-    top: calc(100% + 8px);
-    right: 24px;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-    min-width: 220px;
-    overflow: hidden;
-    z-index: 200;
-    animation: dropdownSlide 0.2s ease-out;
-}
-
-@keyframes dropdownSlide {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.dropdown-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
-    text-decoration: none;
-    color: #31353b;
-    transition: background 0.2s ease;
-    border: none;
-    background: none;
-    width: 100%;
-    text-align: left;
-    cursor: pointer;
-    font-size: 0.95rem;
-}
-
-.dropdown-item:hover {
-    background: #f8f9fa;
-}
-
-.dropdown-item img {
-    width: 18px;
-    height: 18px;
-}
-
-.dropdown-divider {
-    height: 1px;
-    background: #e8eaed;
-    margin: 8px 0;
-}
-
-.dropdown-logout {
-    color: #e74c3c;
-}
-
-.dropdown-logout:hover {
-    background: #ffe5e5;
-}
-</style>
-
-<!-- navbar scripts -->
 <script>
-// toggle mobile menu
-function toggleNavbarMenu() {
-    const menu = document.getElementById('navbarMenu');
-    menu.classList.toggle('navbar-menu-open');
-}
-
 // toggle user dropdown
-let dropdownOpen = false;
 function toggleUserDropdown() {
-    const dropdown = document.getElementById('userDropdown');
-    dropdownOpen = !dropdownOpen;
-    dropdown.style.display = dropdownOpen ? 'block' : 'none';
+    const dropdown = document.getElementById('userDropdownMenu');
+    dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
 }
 
-// close dropdown when clicking outside
-document.addEventListener('click', function(event) {
-    const userDiv = document.querySelector('.navbar-user');
-    const dropdown = document.getElementById('userDropdown');
-    
-    if (dropdown && !userDiv.contains(event.target) && !dropdown.contains(event.target)) {
-        dropdownOpen = false;
-        dropdown.style.display = 'none';
-    }
-});
+// toggle mobile menu
+function toggleMobileMenu() {
+    const menu = document.getElementById('navbarMenu');
+    menu.classList.toggle('active');
+}
 
-// close mobile menu when resizing to desktop
-window.addEventListener('resize', function() {
-    if (window.innerWidth > 968) {
-        const menu = document.getElementById('navbarMenu');
-        menu.classList.remove('navbar-menu-open');
+// close dropdown ketika click di luar
+document.addEventListener('click', function(event) {
+    const userDropdown = document.querySelector('.navbar-user');
+    const dropdown = document.getElementById('userDropdownMenu');
+    
+    if (userDropdown && !userDropdown.contains(event.target) && dropdown) {
+        dropdown.style.display = 'none';
     }
 });
 </script>
