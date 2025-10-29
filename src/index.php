@@ -89,7 +89,7 @@ $container->set('AuthMiddleware', function($c) {
 // BINDING CONTROLLERS
 // ============================================
 
-// auth controller (Fayadh)
+// auth controller
 $container->set('AuthController', function($c) {
     return new Controller\AuthController(
         $c->get('User'),
@@ -100,7 +100,7 @@ $container->set('AuthController', function($c) {
     );
 });
 
-// store controller (Danen)
+// store controller
 $container->set('StoreController', function($c) {
     return new Controller\StoreController(
         $c->get('Store'),
@@ -109,7 +109,7 @@ $container->set('StoreController', function($c) {
     );
 });
 
-// product controller (Farrell & Danen)
+// product controller
 $container->set('ProductController', function($c) {
     return new Controller\ProductController(
         $c->get('Product'),
@@ -118,7 +118,7 @@ $container->set('ProductController', function($c) {
     );
 });
 
-// product discovery controller (Danen)
+// product discovery controller
 $container->set('ProductDiscoveryController', function($c) {
     return new Controller\ProductDiscoveryController(
         $c->get('Product'),
@@ -140,10 +140,10 @@ $router = $container->get('Router');
 // ============================================
 // LOAD ROUTE DEFINITIONS
 // ============================================
-// load auth routes terlebih dahulu (Fayadh)
+// load auth routes terlebih dahulu
 require_once __DIR__ . '/../route/web.php';
 
-// load seller & public routes (Danen)
+// load seller & public routes
 require_once __DIR__ . '/routes.php';
 
 // ============================================

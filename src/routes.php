@@ -8,11 +8,9 @@
 // - Product Discovery (Home/Public)
 // - Store Management
 // 
-// Auth routes (login, register, logout) ada di route/web.php (Fayadh)
+// Auth routes (login, register, logout) ada di route/web.php
 // =================================================================
-
-// gunakan router instance dari container yang sudah dibuat di index.php
-// file ini di-require setelah web.php
+// file ini di require setelah web.php
 
 // ============================================
 // SELLER ROUTES (khusus seller yang sudah login)
