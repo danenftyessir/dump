@@ -1,5 +1,8 @@
 <?php
-require_once dirname(dirname(__DIR__)) . '/config/database.php';
+
+namespace Base;
+
+use PDO;
 
 abstract class Model
 {
@@ -11,8 +14,8 @@ abstract class Model
 
 
     // Ctor
-    public function __construct() {
-        $this->db = Database::getInstance()->getConnection();
+    public function __construct(PDO $db) {
+        $this->db = $db;
         
         // Auto set table name if not defined
         if (!$this->table) {
@@ -56,9 +59,9 @@ abstract class Model
         }
         
         if ($limit) {
-            $sql .= " LIMIT {$limit}";
+            $sql .= " LIMIT " . (int)$limit;
             if ($offset) {
-                $sql .= " OFFSET {$offset}";
+                $sql .= " OFFSET " . (int)$offset;
             }
         }
         
@@ -95,8 +98,8 @@ abstract class Model
         }
         
         if ($stmt->execute()) {
-            $id = $this->db->lastInsertId();
-            return $this->find($id);
+            $data[$this->primaryKey] = $this->db->lastInsertId();
+            return $this->hideFields($data);
         }
         
         return false;
@@ -124,11 +127,7 @@ abstract class Model
         }
         $stmt->bindValue(':id', $id);
         
-        if ($stmt->execute()) {
-            return $this->find($id);
-        }
-        
-        return false;
+        return $stmt->execute();
     }
 
     // Delete Record by Primary Key
