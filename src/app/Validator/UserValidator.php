@@ -1,20 +1,7 @@
 <?php
 
-namespace Validator;
-
-use Model\User;
-use Exception\ValidationException;
-use Exception;
-
 class UserValidator
 {
-    private User $userModel;
-
-    // Ctor
-    public function __construct(User $userModel) {
-        $this->userModel = $userModel;
-    }
-
     // Validate Login Data
     public function validateLogin($data) {
         $errors = [];
@@ -53,13 +40,6 @@ class UserValidator
         // Email format
         if (!empty($data['email']) && !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
             $errors['email'] = 'Invalid email format';
-        }
-
-        // Check if email already exists
-        if (empty($errors['email']) && !empty($data['email'])) {
-            if ($this->userModel->findByEmail($data['email'])) {
-                $errors['email'] = 'Email is already registered';
-            }
         }
 
         // Password confirmation
@@ -112,5 +92,19 @@ class UserValidator
         }
         
         return $errors;
+    }
+}
+
+class ValidationException extends Exception
+{
+    private $errors;
+
+    public function __construct($message = "", $errors = [], $code = 0, Exception $previous = null) {
+        parent::__construct($message, $code, $previous);
+        $this->errors = $errors;
+    }
+
+    public function getErrors() {
+        return $this->errors;
     }
 }

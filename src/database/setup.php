@@ -2,10 +2,6 @@
 // Load Database Configuration
 require_once __DIR__ . '/../config/database.php';
 
-// Autoloader
-require_once __DIR__ . '/../app/Core/Autoloader.php';
-(new \Core\Autoloader())->register();
-
 if (php_sapi_name() !== 'cli') {
     http_response_code(403);
     echo "<!DOCTYPE html><html><body>";
@@ -19,10 +15,7 @@ $newline = "\n";
 try {
     // Test Database Connection
     echo "--- Testing Database Connection ---" . $newline;
-    $config = require __DIR__ . '/../config/database.php';
-    $dsn = "{$config['driver']}:host={$config['host']};port={$config['port']};dbname={$config['database']}";
-    $db = new PDO($dsn, $config['username'], $config['password'], $config['options']);
-
+    $db = Database::getInstance()->getConnection();
     echo "Database Connection Successful" . $newline;
     
     // Check Tables

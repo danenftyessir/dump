@@ -1,10 +1,4 @@
 <?php
-
-namespace Model;
-
-use Base\Model;
-use PDO;
-
 class User extends Model
 {
     protected $table = 'users';
@@ -23,25 +17,9 @@ class User extends Model
         'password'
     ];
 
-    // Ctor
-    public function __construct(PDO $db) {
-        parent::__construct($db);
-    }
-
     // Find User by Email
     public function findByEmail($email) {
         return $this->first(['email' => $email]);
-    }
-
-    // Find User by Email (for login with password)
-    public function findByEmailWithPassword($email) {
-        $sql = "SELECT * FROM {$this->table} WHERE email = :email LIMIT 1";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindParam(':email', $email);
-        $stmt->execute();
-        
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $result ?: null;
     }
 
     // Create New User with Hashed Password
@@ -55,10 +33,6 @@ class User extends Model
 
     // Verify Password
     public function verifyPassword($plainPassword, $hashedPassword) {
-        if (empty($hashedPassword) || empty($plainPassword)) {
-            return false;
-        }
-        
         return password_verify($plainPassword, $hashedPassword);
     }
 
@@ -69,13 +43,53 @@ class User extends Model
 
     // Update User Balance
     public function updateBalance($userId, $amount) {
-        $sql = "UPDATE {$this->table}
-                SET balance = balance + :amount
-                WHERE {$this->primaryKey} = :userId";
+        $user = $this->find($userId);
+        if (!$user) {
+            return false;
+        }
         
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindValue(':amount', (int)$amount, PDO::PARAM_INT);
-        $stmt->bindValue(':userId', (int)$userId, PDO::PARAM_INT);
-        return $stmt->execute();
+        $newBalance = $user['balance'] + $amount;
+        return $this->update($userId, ['balance' => $newBalance]);
+    }
+
+    // Login User
+    public function login($email, $password) {
+        $user = $this->findByEmail($email);
+        
+        if (!$user || !$this->verifyPassword($password, $user['password'])) {
+            return false;
+        }
+        
+        // Remove password from returned data
+        unset($user['password']);
+        return $user;
+    }
+
+    // Register New User
+    public function register($userData) {
+        // Check if email already exists
+        if ($this->findByEmail($userData['email'])) {
+            throw new Exception('Email already registered');
+        }
+
+        // Validate required fields
+        $required = ['email', 'password', 'name'];
+        foreach ($required as $field) {
+            if (empty($userData[$field])) {
+                throw new Exception("Field '$field' is required");
+            }
+        }
+
+        // Set default values
+        $userData['role'] = $userData['role'] ?? 'BUYER';
+        $userData['balance'] = $userData['balance'] ?? 0;
+
+        return $this->createUser($userData);
+    }
+
+    // Check if User is Seller
+    public function isSeller($userId) {
+        $user = $this->find($userId);
+        return $user && $user['role'] === 'SELLER';
     }
 }
