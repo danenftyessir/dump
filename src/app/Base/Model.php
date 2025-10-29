@@ -1,26 +1,29 @@
 <?php
-require_once dirname(dirname(__DIR__)) . '/config/database.php';
+
+namespace Base;
+
+use PDO;
+use Exception;
 
 abstract class Model
 {
+    protected $db;
     protected $table;
     protected $primaryKey = 'id';
     protected $fillable = [];
     protected $hidden = [];
-    protected $db;
 
-
-    // Ctor
-    public function __construct() {
-        $this->db = Database::getInstance()->getConnection();
-        
-        // Auto set table name if not defined
-        if (!$this->table) {
-            $this->table = strtolower(get_class($this)) . 's';
-        }
+    // constructor menerima PDO connection
+    public function __construct(PDO $db) {
+        $this->db = $db;
     }
 
-    // Find Record by Primary Key
+    // get database connection
+    public function getConnection() {
+        return $this->db;
+    }
+
+    // find by primary key
     public function find($id) {
         $sql = "SELECT * FROM {$this->table} WHERE {$this->primaryKey} = :id LIMIT 1";
         $stmt = $this->db->prepare($sql);
@@ -28,110 +31,140 @@ abstract class Model
         $stmt->execute();
         
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $result ? $this->hideFields($result) : null;
-    }
-
-    // Find All Records
-    public function all() {
-        $sql = "SELECT * FROM {$this->table}";
-        $stmt = $this->db->query($sql);
-        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
-        return array_map([$this, 'hideFields'], $results);
+        if ($result) {
+            return $this->hideAttributes($result);
+        }
+        
+        return null;
     }
 
-    // Find Records with Selection Conditions
-    public function where($conditions = [], $limit = null, $offset = null) {
+    // find first by conditions
+    public function first(array $conditions = []) {
         $sql = "SELECT * FROM {$this->table}";
-        $bindings = [];
         
         if (!empty($conditions)) {
-            $whereClauses = [];
-            foreach ($conditions as $field => $value) {
-                $placeholder = ':' . $field;
-                $whereClauses[] = "{$field} = {$placeholder}";
-                $bindings[$placeholder] = $value;
+            $where = [];
+            foreach ($conditions as $key => $value) {
+                $where[] = "{$key} = :{$key}";
             }
-            $sql .= " WHERE " . implode(' AND ', $whereClauses);
+            $sql .= " WHERE " . implode(' AND ', $where);
+        }
+        
+        $sql .= " LIMIT 1";
+        
+        $stmt = $this->db->prepare($sql);
+        
+        foreach ($conditions as $key => $value) {
+            $stmt->bindValue(":{$key}", $value);
+        }
+        
+        $stmt->execute();
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($result) {
+            return $this->hideAttributes($result);
+        }
+        
+        return null;
+    }
+
+    // find all by conditions
+    public function where(array $conditions = [], $orderBy = null, $limit = null) {
+        $sql = "SELECT * FROM {$this->table}";
+        
+        if (!empty($conditions)) {
+            $where = [];
+            foreach ($conditions as $key => $value) {
+                $where[] = "{$key} = :{$key}";
+            }
+            $sql .= " WHERE " . implode(' AND ', $where);
+        }
+        
+        if ($orderBy) {
+            $sql .= " ORDER BY {$orderBy}";
         }
         
         if ($limit) {
             $sql .= " LIMIT {$limit}";
-            if ($offset) {
-                $sql .= " OFFSET {$offset}";
-            }
         }
         
         $stmt = $this->db->prepare($sql);
-        $stmt->execute($bindings);
+        
+        foreach ($conditions as $key => $value) {
+            $stmt->bindValue(":{$key}", $value);
+        }
+        
+        $stmt->execute();
         $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
-        return array_map([$this, 'hideFields'], $results);
+        return array_map([$this, 'hideAttributes'], $results);
     }
 
-    // Find First Record Matching Conditions
-    public function first($conditions = []) {
-        $results = $this->where($conditions, 1);
-        return !empty($results) ? $results[0] : null;
+    // get all records
+    public function all($orderBy = null, $limit = null) {
+        return $this->where([], $orderBy, $limit);
     }
 
-    // Create New Record
-    public function create($data) {
-        // Filter only fillable fields
-        if (!empty($this->fillable)) {
-            $data = array_intersect_key($data, array_flip($this->fillable));
-        }
+    // create new record
+    public function create(array $data) {
+        // filter hanya fillable fields
+        $data = $this->filterFillable($data);
         
         $fields = array_keys($data);
-        $placeholders = array_map(function($field) { return ':' . $field; }, $fields);
+        $values = array_values($data);
         
-        $sql = "INSERT INTO {$this->table} (" . implode(', ', $fields) . ") VALUES (" . implode(', ', $placeholders) . ")";
+        $fieldsList = implode(', ', $fields);
+        $placeholders = implode(', ', array_map(fn($f) => ":{$f}", $fields));
         
-        $stmt = $this->db->prepare($sql);
-        
-        // Bind values
-        foreach ($data as $field => $value) {
-            $stmt->bindValue(':' . $field, $value);
-        }
-        
-        if ($stmt->execute()) {
-            $id = $this->db->lastInsertId();
-            return $this->find($id);
-        }
-        
-        return false;
-    }
-
-    // Update Record by Primary Key
-    public function update($id, $data) {
-        // Filter only fillable fields
-        if (!empty($this->fillable)) {
-            $data = array_intersect_key($data, array_flip($this->fillable));
-        }
-        
-        $setClauses = [];
-        foreach ($data as $field => $value) {
-            $setClauses[] = "{$field} = :{$field}";
-        }
-        
-        $sql = "UPDATE {$this->table} SET " . implode(', ', $setClauses) . " WHERE {$this->primaryKey} = :id";
+        $sql = "INSERT INTO {$this->table} ({$fieldsList}) VALUES ({$placeholders}) RETURNING *";
         
         $stmt = $this->db->prepare($sql);
         
-        // Bind values
-        foreach ($data as $field => $value) {
-            $stmt->bindValue(':' . $field, $value);
-        }
-        $stmt->bindValue(':id', $id);
-        
-        if ($stmt->execute()) {
-            return $this->find($id);
+        foreach ($data as $key => $value) {
+            $stmt->bindValue(":{$key}", $value);
         }
         
-        return false;
+        $stmt->execute();
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($result) {
+            return $this->hideAttributes($result);
+        }
+        
+        return null;
     }
 
-    // Delete Record by Primary Key
+    // update record by primary key
+    public function update($id, array $data) {
+        // filter hanya fillable fields
+        $data = $this->filterFillable($data);
+        
+        $sets = [];
+        foreach ($data as $key => $value) {
+            $sets[] = "{$key} = :{$key}";
+        }
+        
+        $sql = "UPDATE {$this->table} SET " . implode(', ', $sets) . " WHERE {$this->primaryKey} = :id RETURNING *";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindParam(':id', $id);
+        
+        foreach ($data as $key => $value) {
+            $stmt->bindValue(":{$key}", $value);
+        }
+        
+        $stmt->execute();
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($result) {
+            return $this->hideAttributes($result);
+        }
+        
+        return null;
+    }
+
+    // delete record by primary key
     public function delete($id) {
         $sql = "DELETE FROM {$this->table} WHERE {$this->primaryKey} = :id";
         $stmt = $this->db->prepare($sql);
@@ -140,63 +173,40 @@ abstract class Model
         return $stmt->execute();
     }
 
-    // Execute Query
-    public function query($sql, $bindings = []) {
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($bindings);
-        
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-    // Count records
-    public function count($conditions = []) {
-        $sql = "SELECT COUNT(*) as count FROM {$this->table}";
-        $bindings = [];
-        
-        if (!empty($conditions)) {
-            $whereClauses = [];
-            foreach ($conditions as $field => $value) {
-                $placeholder = ':' . $field;
-                $whereClauses[] = "{$field} = {$placeholder}";
-                $bindings[$placeholder] = $value;
-            }
-            $sql .= " WHERE " . implode(' AND ', $whereClauses);
+    // filter hanya fillable attributes
+    protected function filterFillable(array $data) {
+        if (empty($this->fillable)) {
+            return $data;
         }
         
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($bindings);
-        
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        return (int) $result['count'];
+        return array_intersect_key($data, array_flip($this->fillable));
     }
 
-    // Hide Fields from Result
-    private function hideFields($data) {
-        if (!empty($this->hidden) && is_array($data)) {
-            foreach ($this->hidden as $field) {
-                unset($data[$field]);
-            }
+    // hide attributes yang ada di $hidden
+    protected function hideAttributes(array $data) {
+        if (empty($this->hidden)) {
+            return $data;
         }
+        
+        foreach ($this->hidden as $attribute) {
+            unset($data[$attribute]);
+        }
+        
         return $data;
     }
 
-    // Begin Database Transaction
+    // begin transaction
     public function beginTransaction() {
         return $this->db->beginTransaction();
     }
 
-    // Commit Database Transaction
+    // commit transaction
     public function commit() {
         return $this->db->commit();
     }
 
-    // Rollback Database Transaction
+    // rollback transaction
     public function rollback() {
-        return $this->db->rollback();
-    }
-
-    // Get database connection
-    public function getConnection() {
-        return $this->db;
+        return $this->db->rollBack();
     }
 }

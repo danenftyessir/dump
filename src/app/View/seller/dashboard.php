@@ -1,189 +1,184 @@
+<?php
+// pastikan ada data store dan stats dari controller
+$store = $store ?? null;
+$stats = $stats ?? [
+    'total_products' => 0,
+    'low_stock_products' => 0,
+    'pending_orders' => 0,
+    'total_revenue' => 0
+];
+?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Nimonspedia</title>
-    <link rel="stylesheet" href="/css/dashboard.css">
-    <link rel="stylesheet" href="/css/utility.css">
+    <title>Dashboard Seller - Nimonspedia</title>
+    <link rel="stylesheet" href="/css/seller-dashboard.css">
+    <link rel="stylesheet" href="/css/seller-common.css">
 </head>
 <body>
-    <!-- TO DO navbar: 
-         Include navbar untuk seller dengan menu:
-         - Logo/Home (link ke Dashboard)
-         - Navigation menu: Dashboard, Produk, Orders
-         - Logout button
-    -->
-    <?php // include 'components/navbar-seller.php'; ?>
+    <!-- navbar seller -->
+    <?php include __DIR__ . '/../components/navbar-seller.php'; ?>
 
-    <div class="dashboard-container">
-        <!-- Header Section dengan Info Toko -->
-        <div class="store-header">
-            <div class="store-info">
-                <div class="store-logo">
-                    <?php if (isset($store['store_logo_path']) && !empty($store['store_logo_path'])): ?>
-                        <img src="<?= htmlspecialchars($store['store_logo_path']) ?>" alt="Logo Toko">
-                    <?php else: ?>
-                        <div class="logo-placeholder">
-                            <span>📦</span>
-                        </div>
-                    <?php endif; ?>
-                </div>
-                <div class="store-details">
-                    <h1><?= htmlspecialchars($store['store_name'] ?? 'Nama Toko', ENT_QUOTES, 'UTF-8') ?></h1>
-                    <div class="store-description">
-                        <?php 
-                        // Safe rendering rich text dari database
-                        // HTML sudah di-sanitize di backend, tapi tetap escape output
-                        if (isset($store['store_description']) && !empty($store['store_description'])) {
-                            // Gunakan output dari Quill yang sudah di-sanitize
-                            echo $store['store_description'];
-                        } else {
-                            echo '<p>Deskripsi toko belum diatur</p>';
-                        }
-                        ?>
+    <div class="dashboard-wrapper">
+        <!-- hero section dengan background image -->
+        <section class="dashboard-hero">
+            <div class="hero-overlay"></div>
+            <div class="hero-content">
+                <div class="store-info-hero">
+                    <div class="store-logo-large">
+                        <?php if (isset($store['store_logo_path']) && !empty($store['store_logo_path'])): ?>
+                            <img src="<?= htmlspecialchars($store['store_logo_path']) ?>" alt="Logo Toko" class="logo-image">
+                        <?php else: ?>
+                            <img src="/asset/placeholder-store-logo.jpg" alt="Default Logo" class="logo-image placeholder">
+                        <?php endif; ?>
                     </div>
-                    <button class="btn-edit-store" onclick="openEditStoreModal()">
-                        ✏️ Edit Informasi Toko
+                    <div class="store-details-hero">
+                        <h1 class="store-name"><?= htmlspecialchars($store['store_name'] ?? 'Nama Toko') ?></h1>
+                        <p class="store-tagline">Dashboard Penjualan & Manajemen Toko</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="dashboard-container">
+            <!-- quick stats cards -->
+            <section class="stats-section">
+                <h2 class="section-title">Ringkasan Performa</h2>
+                <div class="stats-grid">
+                    <!-- total products -->
+                    <div class="stat-card card-primary">
+                        <div class="stat-icon-wrapper">
+                            <img src="/asset/icon-box.svg" alt="Products" class="stat-icon">
+                        </div>
+                        <div class="stat-content">
+                            <p class="stat-label">Total Produk</p>
+                            <h3 class="stat-value"><?= number_format($stats['total_products']) ?></h3>
+                            <a href="/seller/products" class="stat-link">Kelola Produk →</a>
+                        </div>
+                    </div>
+
+                    <!-- pending orders -->
+                    <div class="stat-card card-warning">
+                        <div class="stat-icon-wrapper">
+                            <img src="/asset/icon-clock.svg" alt="Pending" class="stat-icon">
+                        </div>
+                        <div class="stat-content">
+                            <p class="stat-label">Pesanan Menunggu</p>
+                            <h3 class="stat-value"><?= number_format($stats['pending_orders']) ?></h3>
+                            <?php if ($stats['pending_orders'] > 0): ?>
+                                <span class="stat-badge badge-urgent">Perlu Ditindaklanjuti</span>
+                            <?php else: ?>
+                                <span class="stat-badge badge-ok">Semua Terkelola</span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+                    <!-- low stock warning -->
+                    <div class="stat-card card-danger">
+                        <div class="stat-icon-wrapper">
+                            <img src="/asset/icon-alert.svg" alt="Alert" class="stat-icon">
+                        </div>
+                        <div class="stat-content">
+                            <p class="stat-label">Stok Menipis</p>
+                            <h3 class="stat-value"><?= number_format($stats['low_stock_products']) ?></h3>
+                            <?php if ($stats['low_stock_products'] > 0): ?>
+                                <a href="/seller/products?filter=low_stock" class="stat-link">Lihat Detail →</a>
+                            <?php else: ?>
+                                <span class="stat-badge badge-ok">Stok Aman</span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+                    <!-- total revenue -->
+                    <div class="stat-card card-success">
+                        <div class="stat-icon-wrapper">
+                            <img src="/asset/icon-chart.svg" alt="Revenue" class="stat-icon">
+                        </div>
+                        <div class="stat-content">
+                            <p class="stat-label">Total Pendapatan</p>
+                            <h3 class="stat-value">Rp <?= number_format($stats['total_revenue']) ?></h3>
+                            <p class="stat-sublabel">Dari Pesanan Selesai</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- quick actions -->
+            <section class="actions-section">
+                <h2 class="section-title">Aksi Cepat</h2>
+                <div class="actions-grid">
+                    <a href="/seller/products/add" class="action-card">
+                        <div class="action-icon">
+                            <img src="/asset/icon-add-product.svg" alt="Add Product">
+                        </div>
+                        <h3 class="action-title">Tambah Produk</h3>
+                        <p class="action-desc">Upload produk baru ke toko Anda</p>
+                    </a>
+
+                    <a href="/seller/products" class="action-card">
+                        <div class="action-icon">
+                            <img src="/asset/icon-manage.svg" alt="Manage">
+                        </div>
+                        <h3 class="action-title">Kelola Produk</h3>
+                        <p class="action-desc">Edit, hapus, atau perbarui stok produk</p>
+                    </a>
+
+                    <a href="/seller/orders" class="action-card">
+                        <div class="action-icon">
+                            <img src="/asset/icon-orders.svg" alt="Orders">
+                        </div>
+                        <h3 class="action-title">Kelola Pesanan</h3>
+                        <p class="action-desc">Proses pesanan dari pembeli</p>
+                    </a>
+
+                    <button onclick="openEditStoreModal()" class="action-card">
+                        <div class="action-icon">
+                            <img src="/asset/icon-settings.svg" alt="Settings">
+                        </div>
+                        <h3 class="action-title">Pengaturan Toko</h3>
+                        <p class="action-desc">Edit informasi dan logo toko</p>
                     </button>
                 </div>
-            </div>
+            </section>
+
+            <!-- store description -->
+            <section class="store-description-section">
+                <div class="description-card">
+                    <h2 class="section-title">Deskripsi Toko</h2>
+                    <div class="description-content">
+                        <?php if (isset($store['store_description']) && !empty($store['store_description'])): ?>
+                            <?= $store['store_description'] ?>
+                        <?php else: ?>
+                            <div class="empty-state-inline">
+                                <img src="/asset/empty-description.svg" alt="Empty" class="empty-icon-small">
+                                <p class="empty-text">Belum ada deskripsi toko. Tambahkan deskripsi untuk menarik lebih banyak pembeli.</p>
+                                <button onclick="openEditStoreModal()" class="btn-secondary-small">Tambah Deskripsi</button>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </section>
         </div>
-
-        <!-- Quick Stats Cards -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-icon">📦</div>
-                <div class="stat-content">
-                    <h3>Total Produk</h3>
-                    <p class="stat-number" id="totalProducts">
-                        <?= $stats['total_products'] ?? 0 ?>
-                    </p>
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-icon">⏳</div>
-                <div class="stat-content">
-                    <h3>Pending Orders</h3>
-                    <p class="stat-number" id="pendingOrders">
-                        <?= $stats['pending_orders'] ?? 0 ?>
-                    </p>
-                </div>
-            </div>
-
-            <div class="stat-card warning">
-                <div class="stat-icon">⚠️</div>
-                <div class="stat-content">
-                    <h3>Produk Stok Menipis</h3>
-                    <p class="stat-number" id="lowStockProducts">
-                        <?= $stats['low_stock_products'] ?? 0 ?>
-                    </p>
-                    <span class="stat-subtitle">Stok &lt; 10</span>
-                </div>
-            </div>
-
-            <div class="stat-card success">
-                <div class="stat-icon">💰</div>
-                <div class="stat-content">
-                    <h3>Total Pendapatan</h3>
-                    <p class="stat-number" id="totalRevenue">
-                        Rp <?= number_format($stats['total_revenue'] ?? 0, 0, ',', '.') ?>
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Quick Actions -->
-        <div class="quick-actions">
-            <h2>Aksi Cepat</h2>
-            <div class="actions-grid">
-                <a href="/seller/products" class="action-card">
-                    <div class="action-icon">🏪</div>
-                    <h3>Kelola Produk</h3>
-                    <p>Lihat Dan Edit Produk Anda</p>
-                </a>
-
-                <a href="/seller/orders" class="action-card">
-                    <div class="action-icon">📋</div>
-                    <h3>Lihat Orders</h3>
-                    <p>Kelola Pesanan Masuk</p>
-                </a>
-
-                <a href="/seller/products/add" class="action-card highlight">
-                    <div class="action-icon">➕</div>
-                    <h3>Tambah Produk Baru</h3>
-                    <p>Buat Listing Produk</p>
-                </a>
-            </div>
-        </div>
-
-        <!-- Recent Activity -->
-        <!-- TO DO: Implementasi recent activity -->
     </div>
 
-    <!-- Modal Edit Store -->
-    <div id="editStoreModal" class="modal modal-closed hidden">
+    <!-- modal edit store (placeholder) -->
+    <div id="editStoreModal" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="closeEditStoreModal()">&times;</span>
-            <h2>Edit Informasi Toko</h2>
-            
-            <form id="editStoreForm" enctype="multipart/form-data">
-                <div class="form-group">
-                    <label for="storeName">Nama Toko *</label>
-                    <input 
-                        type="text" 
-                        id="storeName" 
-                        name="store_name" 
-                        value="<?= htmlspecialchars($store['store_name'] ?? '') ?>"
-                        maxlength="100"
-                        required
-                    >
-                    <span class="char-count">
-                        <span id="nameCharCount">0</span>/100
-                    </span>
-                </div>
-
-                <div class="form-group">
-                    <label for="storeDescription">Deskripsi Toko *</label>
-                    <!-- TO DO: Implementasi Rich Text Editor menggunakan Quill.js -->
-                    <div id="storeDescriptionEditor"></div>
-                    <input type="hidden" id="storeDescription" name="store_description">
-                </div>
-
-                <div class="form-group">
-                    <label for="storeLogo">Logo Toko</label>
-                    <input 
-                        type="file" 
-                        id="storeLogo" 
-                        name="store_logo" 
-                        accept="image/jpeg,image/jpg,image/png,image/webp"
-                    >
-                    <p class="help-text">Format: JPG, JPEG, PNG, WEBP. Maksimal 2MB</p>
-                    <div id="logoPreview" class="image-preview"></div>
-                </div>
-
-                <div class="form-actions">
-                    <button type="button" class="btn-secondary" onclick="closeEditStoreModal()">
-                        Batal
-                    </button>
-                    <button type="submit" class="btn-primary" id="btnSaveStore">
-                        <span class="btn-text show-inline">Simpan Perubahan</span>
-                        <span class="btn-loader hidden">⏳ Menyimpan...</span>
-                    </button>
-                </div>
-            </form>
+            <div class="modal-header">
+                <h2>Edit Informasi Toko</h2>
+                <button class="modal-close" onclick="closeEditStoreModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="editStoreForm" enctype="multipart/form-data">
+                    <!-- form fields akan ditambahkan via JavaScript -->
+                    <p class="placeholder-text">Form edit toko akan dimuat...</p>
+                </form>
+            </div>
         </div>
     </div>
 
-    <!-- TO DO
-         sukses/error toast notification
-    -->
-
-    <script src="/public/js/dashboard.js"></script>
-    
-    <!-- TO DO: include Quill.js untuk rich text editor -->
-    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    <script src="/js/seller-dashboard.js"></script>
 </body>
 </html>

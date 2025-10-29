@@ -1,212 +1,283 @@
 <?php
+
+namespace Core;
+
+use Exception;
+
 class Router
 {
     private static $instance = null;
     private $routes = [];
     private $currentRoute = null;
+    private $container;
 
-    // Ctor
-    private function __construct() {
-        $this->routes = [
-            'GET' => [],
-            'POST' => [],
-            'PUT' => [],
-            'PATCH' => [],
-            'DELETE' => [],
-            'OPTIONS' => []
-        ];
+    // constructor menerima container untuk dependency injection
+    private function __construct($container = null) {
+        $this->container = $container;
     }
 
-    public static function getInstance() {
+    // singleton pattern dengan container support
+    public static function getInstance($container = null) {
         if (self::$instance === null) {
-            self::$instance = new self();
+            self::$instance = new self($container);
+        } else if ($container !== null && self::$instance->container === null) {
+            self::$instance->container = $container;
         }
         return self::$instance;
     }
 
-    // Register GET route
-    public function get($path, $handler) {
-        return $this->addRoute('GET', $path, $handler);
-    }
-
-    // Register POST route
-    public function post($path, $handler) {
-        return $this->addRoute('POST', $path, $handler);
-    }
-
-    // Register PUT route
-    public function put($path, $handler) {
-        return $this->addRoute('PUT', $path, $handler);
-    }
-
-    // Register PATCH route
-    public function patch($path, $handler) {
-        return $this->addRoute('PATCH', $path, $handler);
-    }
-
-    // Register DELETE route
-    public function delete($path, $handler) {
-        return $this->addRoute('DELETE', $path, $handler);
-    }
-
-    // Register OPTIONS route
-    public function options($path, $handler) {
-        return $this->addRoute('OPTIONS', $path, $handler);
-    }
-
-    // Add Route to Router
-    private function addRoute($method, $path, $handler) {
-        $path = $this->normalizePath($path);
-        
-        $this->routes[$method][$path] = [
+    // register GET route
+    public function get($uri, $handler) {
+        $this->currentRoute = [
+            'method' => 'GET',
+            'uri' => $uri,
             'handler' => $handler,
-            'path' => $path,
-            'method' => $method
+            'middlewares' => []
         ];
+        $this->routes[] = $this->currentRoute;
+        return $this;
+    }
+
+    // register POST route
+    public function post($uri, $handler) {
+        $this->currentRoute = [
+            'method' => 'POST',
+            'uri' => $uri,
+            'handler' => $handler,
+            'middlewares' => []
+        ];
+        $this->routes[] = $this->currentRoute;
+        return $this;
+    }
+
+    // register PUT route
+    public function put($uri, $handler) {
+        $this->currentRoute = [
+            'method' => 'PUT',
+            'uri' => $uri,
+            'handler' => $handler,
+            'middlewares' => []
+        ];
+        $this->routes[] = $this->currentRoute;
+        return $this;
+    }
+
+    // register PATCH route
+    public function patch($uri, $handler) {
+        $this->currentRoute = [
+            'method' => 'PATCH',
+            'uri' => $uri,
+            'handler' => $handler,
+            'middlewares' => []
+        ];
+        $this->routes[] = $this->currentRoute;
+        return $this;
+    }
+
+    // register DELETE route
+    public function delete($uri, $handler) {
+        $this->currentRoute = [
+            'method' => 'DELETE',
+            'uri' => $uri,
+            'handler' => $handler,
+            'middlewares' => []
+        ];
+        $this->routes[] = $this->currentRoute;
+        return $this;
+    }
+
+    // tambahkan middleware ke route terakhir yang didefinisikan
+    public function middleware($middlewares) {
+        if ($this->currentRoute === null) {
+            throw new Exception('Tidak ada route yang didefinisikan untuk middleware');
+        }
+        
+        $middlewares = is_array($middlewares) ? $middlewares : [$middlewares];
+        
+        // update middleware di route terakhir
+        $lastIndex = count($this->routes) - 1;
+        $this->routes[$lastIndex]['middlewares'] = array_merge(
+            $this->routes[$lastIndex]['middlewares'],
+            $middlewares
+        );
         
         return $this;
     }
 
-    // Normalize Path
-    private function normalizePath($path) {
-        $path = trim($path, '/');
-        return $path === '' ? '/' : '/' . $path;
-    }
+    // dispatch request ke handler yang sesuai
+    public function dispatch() {
+        $requestMethod = $_SERVER['REQUEST_METHOD'];
+        $requestUri = $this->getRequestPath();
 
-    // Get Current Request Method
-    private function getRequestMethod() {
-        return $_SERVER['REQUEST_METHOD'] ?? 'GET';
-    }
-
-    // Get Current Request Path
-    private function getRequestPath() {
-        $path = $_SERVER['REQUEST_URI'] ?? '/';
-        
-        // Remove query string
-        if (($pos = strpos($path, '?')) !== false) {
-            $path = substr($path, 0, $pos);
+        // cari route yang cocok
+        foreach ($this->routes as $route) {
+            $pattern = $this->convertUriToRegex($route['uri']);
+            
+            if ($route['method'] === $requestMethod && preg_match($pattern, $requestUri, $matches)) {
+                // ekstrak parameter dari URI
+                array_shift($matches);
+                $_GET = array_merge($_GET, $matches);
+                
+                // jalankan middleware
+                if (!empty($route['middlewares'])) {
+                    $middlewareResult = $this->runMiddlewares($route['middlewares'], $route['handler']);
+                    if ($middlewareResult === false) {
+                        return;
+                    }
+                }
+                
+                // jalankan handler
+                $this->handleRequest($route['handler']);
+                return;
+            }
         }
-        
+
+        // route tidak ditemukan
+        $this->handleNotFound();
+    }
+
+    // konversi URI pattern ke regex
+    private function convertUriToRegex($uri) {
+        $uri = trim($uri, '/');
+        // ubah {param} menjadi named capture group
+        $pattern = preg_replace('/\{([a-zA-Z0-9_]+)\}/', '(?P<$1>[^/]+)', $uri);
+        return '#^' . $pattern . '$#';
+    }
+
+    // dapatkan request path
+    private function getRequestPath() {
+        $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
         return $this->normalizePath($path);
     }
 
-    // Dispatch Request
-    public function dispatch() {
-        try {
-            $method = $this->getRequestMethod();
-            $path = $this->getRequestPath();
-
-            // Find exact match first
-            if (isset($this->routes[$method][$path])) {
-                $route = $this->routes[$method][$path];
-                $this->currentRoute = $route;
-                return $this->executeRoute($route);
-            }
-
-            // Try to match routes with parameters
-            foreach ($this->routes[$method] as $routePath => $route) {
-                if ($this->matchRoute($routePath, $path)) {
-                    $this->currentRoute = $route;
-                    return $this->executeRoute($route);
-                }
-            }
-
-            // No route found (404)
-            return $this->handleNotFound();
-
-        } catch (Exception $e) {
-            return $this->handleError($e);
-        }
+    // normalisasi path
+    private function normalizePath($path) {
+        $path = trim($path, '/');
+        return $path === '' ? '' : $path;
     }
 
-    // Match Route with Parameters
-    private function matchRoute($routePath, $requestPath) {
-        // Convert to regex pattern
-        $pattern = preg_replace('/\{[^}]+\}/', '([^/]+)', $routePath);
-        $pattern = '#^' . str_replace('/', '\/', $pattern) . '$#';
-        
-        return preg_match($pattern, $requestPath);
-    }
+    // jalankan middlewares
+    private function runMiddlewares($middlewares, $handler) {
+        // buat middleware pipeline
+        $next = function() use ($handler) {
+            return true; // lanjutkan ke handler
+        };
 
-    // Execute Matched Route
-    private function executeRoute($route) {
-        $handler = $route['handler'];
-
-        // If handler is a callable
-        if (is_callable($handler)) {
-            return call_user_func($handler);
+        // jalankan middleware dari belakang
+        foreach (array_reverse($middlewares) as $middleware) {
+            $next = $this->createMiddlewareLayer($middleware, $next);
         }
 
-        // If handler is Controller@method format
-        if (is_string($handler) && strpos($handler, '@') !== false) {
-            list($controllerName, $methodName) = explode('@', $handler);
+        // eksekusi pipeline
+        return $next();
+    }
+
+    // buat layer middleware
+    private function createMiddlewareLayer($middlewareName, $next) {
+        return function() use ($middlewareName, $next) {
+            // pisahkan nama middleware dan parameter
+            $parts = explode(':', $middlewareName);
+            $middlewareKey = $parts[0];
+            $params = array_slice($parts, 1);
+
+            // dapatkan middleware instance dari container
+            if ($this->container === null) {
+                throw new Exception('Container tidak tersedia untuk middleware');
+            }
+
+            $middlewareInstance = $this->container->get('AuthMiddleware');
             
-            // Load controller
-            if (class_exists($controllerName)) {
-                $controller = new $controllerName();
-                
-                if (method_exists($controller, $methodName)) {
-                    return call_user_func([$controller, $methodName]);
-                } else {
-                    throw new Exception("Method {$methodName} not found in {$controllerName}");
-                }
-            } else {
-                throw new Exception("Controller {$controllerName} not found");
+            // mapping nama middleware ke method
+            $middlewareMap = [
+                'auth' => 'handleAuth',
+                'guest' => 'handleGuest',
+                'seller' => 'handleSeller',
+                'buyer' => 'handleBuyer',
+                'csrf' => 'handleCSRF',
+                'rate-limit' => 'handleRateLimit',
+                'security-headers' => 'handleSecurityHeaders'
+            ];
+            
+            $handlerMethod = $middlewareMap[$middlewareKey] ?? null;
+            
+            if ($handlerMethod === null || !method_exists($middlewareInstance, $handlerMethod)) {
+                throw new Exception("Middleware handler {$middlewareKey} tidak ditemukan");
             }
-        }
 
-        throw new Exception("Invalid route handler: " . print_r($handler, true));
+            // jalankan middleware dengan parameter jika ada
+            if ($middlewareKey === 'rate-limit') {
+                // rate-limit mengembalikan closure
+                $middlewareHandler = $middlewareInstance->$handlerMethod(...$params);
+                return $middlewareHandler($next);
+            } else {
+                // middleware lain langsung menerima $next
+                return $middlewareInstance->$handlerMethod($next);
+            }
+        };
     }
 
-    // Handle 404 Not Found
+    // handle request dengan controller dan method
+    private function handleRequest($handler) {
+        if (is_callable($handler)) {
+            // handler adalah closure/function
+            call_user_func($handler);
+            return;
+        }
+
+        if (is_string($handler)) {
+            // handler adalah string "Controller@method"
+            list($controllerName, $method) = explode('@', $handler);
+            
+            // tambahkan namespace jika belum ada
+            if (strpos($controllerName, '\\') === false) {
+                $controllerName = 'Controller\\' . $controllerName;
+            }
+            
+            // WAJIB gunakan container untuk dependency injection
+            if ($this->container === null) {
+                throw new Exception("Container tidak tersedia. Controller {$controllerName} membutuhkan dependency injection.");
+            }
+            
+            // dapatkan controller instance dari container
+            try {
+                $controller = $this->container->get($controllerName);
+            } catch (Exception $e) {
+                // error jika controller tidak terdaftar di container
+                throw new Exception("Controller {$controllerName} tidak terdaftar di container. Error: {$e->getMessage()}");
+            }
+            
+            // panggil method
+            if (!method_exists($controller, $method)) {
+                throw new Exception("Method {$method} tidak ditemukan di {$controllerName}");
+            }
+            
+            call_user_func([$controller, $method]);
+            return;
+        }
+
+        throw new Exception('Handler tidak valid: ' . print_r($handler, true));
+    }
+
+    // handle 404 not found
     private function handleNotFound() {
         http_response_code(404);
-        
-        if (class_exists('ErrorController')) {
-            $controller = new ErrorController();
-            if (method_exists($controller, 'notFound')) {
-                return $controller->notFound();
+        // TODO: buat halaman khusus 404
+        echo "<h1>404 Not Found</h1>";
+        echo "<p>Halaman yang Anda cari tidak ditemukan.</p>";
+        exit;
+    }
+
+    // debug: tampilkan semua route
+    public function debugRoutes() {
+        echo "<h2>Registered Routes:</h2>";
+        echo "<pre>";
+        foreach ($this->routes as $route) {
+            echo "{$route['method']} {$route['uri']}";
+            if (!empty($route['middlewares'])) {
+                echo " [" . implode(', ', $route['middlewares']) . "]";
             }
+            echo "\n";
         }
-        
-        // Default 404 response
-        header('Content-Type: application/json');
-        echo json_encode([
-            'error' => 'Not Found',
-            'message' => 'The requested route was not found',
-            'path' => $this->getRequestPath(),
-            'method' => $this->getRequestMethod()
-        ]);
-    }
-
-    // Handle Route Execution Errors
-    private function handleError($exception) {
-        http_response_code(500);
-        
-        if (class_exists('ErrorController')) {
-            $controller = new ErrorController();
-            if (method_exists($controller, 'internalError')) {
-                return $controller->internalError($exception);
-            }
-        }
-        
-        // Default error response
-        header('Content-Type: application/json');
-        echo json_encode([
-            'error' => 'Internal Server Error',
-            'message' => $exception->getMessage(),
-            'file' => $exception->getFile(),
-            'line' => $exception->getLine()
-        ]);
-    }
-
-    // Get All Registered Routes
-    public function getRoutes() {
-        return $this->routes;
-    }
-
-    // Get Current Matched Route
-    public function getCurrentRoute() {
-        return $this->currentRoute;
+        echo "</pre>";
     }
 }

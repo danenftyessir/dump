@@ -1,135 +1,141 @@
+<?php
+// pastikan ada data store dan categories dari controller
+$store = $store ?? null;
+$categories = $categories ?? [];
+?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manajemen Produk - Nimonspedia</title>
-    <link rel="stylesheet" href="/css/utility.css">
-    <link rel="stylesheet" href="/css/product-management.css">
+    <title>Kelola Produk - Nimonspedia</title>
+    <link rel="stylesheet" href="/css/seller-products.css">
+    <link rel="stylesheet" href="/css/seller-common.css">
 </head>
 <body>
-    <!-- TO DO navbar untuk seller -->
-    <?php // include 'components/navbar-seller.php'; ?>
+    <!-- navbar seller -->
+    <?php include __DIR__ . '/../components/navbar-seller.php'; ?>
 
-    <div class="products-container">
-        <!-- Header Section -->
-        <div class="page-header">
-            <div class="header-content">
-                <h1>Manajemen Produk</h1>
-                <p>Kelola Produk Toko Anda</p>
+    <div class="products-wrapper">
+        <!-- header section -->
+        <section class="products-header">
+            <div class="products-header-content">
+                <div class="header-left">
+                    <h1 class="page-title">Kelola Produk</h1>
+                    <p class="page-subtitle">Atur Dan Perbarui Produk Toko Anda</p>
+                </div>
+                <div class="header-right">
+                    <a href="/seller/products/add" class="btn-primary">
+                        <img src="/asset/icon-plus.svg" alt="Add" class="btn-icon">
+                        <span>Tambah Produk Baru</span>
+                    </a>
+                </div>
             </div>
-            <a href="/seller/products/add" class="btn-add-product">
-                <span>+</span> Tambah Produk
-            </a>
-        </div>
+        </section>
 
-        <!-- Filter dan Search Section -->
-        <div class="filter-section">
-            <div class="search-box-wrapper">
-                <input 
-                    type="text" 
-                    id="searchInput" 
-                    placeholder="Cari Nama Produk..."
-                    autocomplete="off"
-                >
-                <button class="btn-search" aria-label="Cari">🔍</button>
-            </div>
-
-            <div class="filter-controls">
-                <div class="filter-group">
-                    <label for="categoryFilter">Kategori:</label>
-                    <select id="categoryFilter" class="filter-select">
-                        <option value="">Semua Kategori</option>
-                        <?php if (isset($categories) && is_array($categories)): ?>
+        <div class="products-container">
+            <!-- filter dan search bar -->
+            <section class="filter-section">
+                <div class="filter-card">
+                    <div class="search-wrapper">
+                        <img src="/asset/icon-search.svg" alt="Search" class="search-icon">
+                        <input 
+                            type="text" 
+                            id="searchInput" 
+                            class="search-input" 
+                            placeholder="Cari Produk Berdasarkan Nama..."
+                        >
+                    </div>
+                    
+                    <div class="filter-controls">
+                        <select id="categoryFilter" class="filter-select">
+                            <option value="">Semua Kategori</option>
                             <?php foreach ($categories as $category): ?>
-                                <option value="<?= htmlspecialchars($category['category_id']) ?>">
+                                <option value="<?= $category['category_id'] ?>">
                                     <?= htmlspecialchars($category['name']) ?>
                                 </option>
                             <?php endforeach; ?>
-                        <?php endif; ?>
-                    </select>
+                        </select>
+
+                        <select id="sortBy" class="filter-select">
+                            <option value="created_at">Terbaru</option>
+                            <option value="product_name">Nama (A-Z)</option>
+                            <option value="price">Harga Terendah</option>
+                            <option value="stock">Stok Terendah</option>
+                        </select>
+
+                        <button id="resetFilter" class="btn-reset">
+                            <img src="/asset/icon-refresh.svg" alt="Reset" class="btn-icon-small">
+                            Reset
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- products list -->
+            <section class="products-list-section">
+                <div id="productsContainer">
+                    <!-- loading state -->
+                    <div id="loadingState" class="loading-state">
+                        <div class="loader"></div>
+                        <p class="loading-text">Memuat Produk...</p>
+                    </div>
+
+                    <!-- empty state (akan ditampilkan via JavaScript jika tidak ada produk) -->
+                    <div id="emptyState" class="empty-state" style="display: none;">
+                        <img src="/asset/empty-products.svg" alt="No Products" class="empty-illustration">
+                        <h3 class="empty-title">Belum Ada Produk</h3>
+                        <p class="empty-description">
+                            Mulai jualan dengan menambahkan produk pertama Anda. 
+                            Produk yang menarik akan membantu meningkatkan penjualan!
+                        </p>
+                        <a href="/seller/products/add" class="btn-primary">
+                            <img src="/asset/icon-plus.svg" alt="Add" class="btn-icon">
+                            <span>Tambah Produk Pertama</span>
+                        </a>
+                    </div>
+
+                    <!-- products grid (akan diisi via JavaScript) -->
+                    <div id="productsGrid" class="products-grid"></div>
                 </div>
 
-                <div class="filter-group">
-                    <label for="sortBy">Urutkan:</label>
-                    <select id="sortBy" class="filter-select">
-                        <option value="created_at:DESC">Terbaru</option>
-                        <option value="created_at:ASC">Terlama</option>
-                        <option value="product_name:ASC">Nama A-Z</option>
-                        <option value="product_name:DESC">Nama Z-A</option>
-                        <option value="price:ASC">Harga Terendah</option>
-                        <option value="price:DESC">Harga Tertinggi</option>
-                        <option value="stock:ASC">Stok Terendah</option>
-                        <option value="stock:DESC">Stok Tertinggi</option>
-                    </select>
+                <!-- pagination -->
+                <div id="paginationContainer" class="pagination-wrapper" style="display: none;">
+                    <div class="pagination-info">
+                        <span id="paginationText">Menampilkan 1-10 Dari 50 Produk</span>
+                    </div>
+                    <div id="paginationButtons" class="pagination-buttons">
+                        <!-- buttons akan diisi via JavaScript -->
+                    </div>
                 </div>
-
-                <button class="btn-reset" id="resetFilters">Reset</button>
-            </div>
-        </div>
-
-        <!-- Products Table -->
-        <div class="table-container">
-            <div id="loadingState" class="loading-state">
-                <div class="spinner"></div>
-                <p>Memuat Produk...</p>
-            </div>
-
-            <div id="emptyState" class="empty-state" style="display: none;">
-                <div class="empty-icon">📦</div>
-                <h3>Belum Ada Produk</h3>
-                <p>Mulai Tambahkan Produk Pertama Anda</p>
-                <a href="/seller/products/add" class="btn-add-first">Tambah Produk Pertama</a>
-            </div>
-
-            <table id="productsTable" class="products-table" style="display: none;">
-                <thead>
-                    <tr>
-                        <th>Foto</th>
-                        <th>Nama Produk</th>
-                        <th>Harga</th>
-                        <th>Stok</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody id="productsTableBody">
-                    <!-- data produk akan diisi oleh js -->
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Pagination -->
-        <div id="paginationContainer" class="pagination-container" style="display: none;">
-            <div class="pagination-info">
-                <span id="paginationInfo">Menampilkan 1-10 dari 50 produk</span>
-            </div>
-            <div class="pagination-controls" id="paginationControls">
-                <!-- tombol pagination akan diisi oleh JavaScript -->
-            </div>
+            </section>
         </div>
     </div>
 
-    <!-- Modal Delete Confirmation -->
+    <!-- modal confirm delete -->
     <div id="deleteModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content modal-small">
             <div class="modal-header">
-                <h2>Konfirmasi Hapus</h2>
+                <h3>Konfirmasi Hapus</h3>
                 <button class="modal-close" onclick="closeDeleteModal()">&times;</button>
             </div>
             <div class="modal-body">
-                <p>Apakah Anda Yakin Ingin Menghapus Produk Ini?</p>
-                <p class="warning-text">Tindakan Ini Tidak Dapat Dibatalkan.</p>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary" onclick="closeDeleteModal()">Batal</button>
-                <button class="btn-danger" id="confirmDeleteBtn">Hapus</button>
+                <img src="/asset/icon-warning.svg" alt="Warning" class="modal-icon">
+                <p class="modal-text">Apakah Anda yakin ingin menghapus produk ini? Tindakan ini tidak dapat dibatalkan.</p>
+                <div class="modal-actions">
+                    <button onclick="closeDeleteModal()" class="btn-secondary">Batal</button>
+                    <button onclick="confirmDelete()" class="btn-danger">Hapus Produk</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Toast Notif -->
-    <div id="toast" class="toast"></div>
+    <!-- notification toast -->
+    <div id="toast" class="toast">
+        <img src="/asset/icon-check.svg" alt="Success" class="toast-icon">
+        <span id="toastMessage" class="toast-message"></span>
+    </div>
 
-    <script src="/js/product-management.js"></script>
+    <script src="/js/seller-products.js"></script>
 </body>
 </html>

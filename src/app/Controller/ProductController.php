@@ -1,4 +1,13 @@
 <?php
+
+namespace Controller;
+
+use Base\Controller;
+use Model\Product;
+use Model\Category;
+use Model\Store;
+use Exception;
+
 class ProductController extends Controller
 {
     private $productModel;
@@ -6,10 +15,11 @@ class ProductController extends Controller
     private $storeModel;
     private $uploadDir;
 
-    public function __construct() {
-        $this->productModel = new Product();
-        $this->categoryModel = new Category();
-        $this->storeModel = new Store();
+    // constructor dengan dependency injection
+    public function __construct(Product $productModel, Category $categoryModel, Store $storeModel) {
+        $this->productModel = $productModel;
+        $this->categoryModel = $categoryModel;
+        $this->storeModel = $storeModel;
         $this->uploadDir = dirname(dirname(dirname(__DIR__))) . '/public/uploads/products/';
         
         // buat direktori jika belum ada dengan suppress warning
@@ -20,7 +30,7 @@ class ProductController extends Controller
 
     // halaman product management seller
     public function index() {
-        // ambil user dari session (udh di start di index.php nya)
+        // ambil user dari session
         $userId = $_SESSION['user']['user_id'] ?? null;
         
         if (!$userId) {
@@ -46,7 +56,7 @@ class ProductController extends Controller
     // API untuk mendapatkan produk seller dengan filter
     public function getSellerProducts() {
         try {
-            // TO DO validasi user adalah seller yang sudah login
+            // ambil user dari session
             $userId = $_SESSION['user']['user_id'] ?? null;
             
             if (!$userId) {
@@ -81,7 +91,7 @@ class ProductController extends Controller
 
     // halaman add product
     public function create() {
-        // TO DO validasi user adalah seller yang sudah login
+        // ambil user dari session
         $userId = $_SESSION['user']['user_id'] ?? null;
         
         if (!$userId) {
@@ -106,7 +116,7 @@ class ProductController extends Controller
     // API untuk menyimpan produk baru
     public function store() {
         try {
-            // TO DO validasi user adalah seller yang sudah login
+            // ambil user dari session
             $userId = $_SESSION['user']['user_id'] ?? null;
             
             if (!$userId) {
@@ -137,42 +147,45 @@ class ProductController extends Controller
             
             if (empty($description)) {
                 $errors[] = 'Deskripsi tidak boleh kosong';
-            } elseif (strlen($description) > 5000) {
-                $errors[] = 'Deskripsi maksimal 5000 karakter';
+            } elseif (strlen($description) > 1000) {
+                $errors[] = 'Deskripsi maksimal 1000 karakter';
             }
             
-            if (!is_numeric($price) || $price < 1000) {
+            if (empty($price) || !is_numeric($price)) {
+                $errors[] = 'Harga harus berupa angka';
+            } elseif ($price < 1000) {
                 $errors[] = 'Harga minimal Rp 1.000';
             }
             
-            if (!is_numeric($stock) || $stock < 0) {
-                $errors[] = 'Stok minimal 0';
+            if (!isset($stock) || !is_numeric($stock)) {
+                $errors[] = 'Stok harus berupa angka';
+            } elseif ($stock < 0) {
+                $errors[] = 'Stok tidak boleh negatif';
             }
             
             if (empty($categoryIds) || !is_array($categoryIds)) {
-                $errors[] = 'Pilih minimal 1 kategori';
+                $errors[] = 'Pilih minimal satu kategori';
             }
             
-            // validasi foto
-            if (!isset($_FILES['product_image']) || $_FILES['product_image']['error'] === UPLOAD_ERR_NO_FILE) {
+            // validasi upload foto
+            if (!isset($_FILES['product_image']) || $_FILES['product_image']['error'] !== UPLOAD_ERR_OK) {
                 $errors[] = 'Foto produk wajib diupload';
             }
             
             if (!empty($errors)) {
-                return $this->error(implode(', ', $errors), 400);
+                return $this->error('Validasi Gagal', 400, ['errors' => $errors]);
             }
             
-            // sanitasi deskripsi rich text
-            $description = $this->sanitizeRichText($description);
-            
             // handle upload foto
-            $uploadResult = $this->handleProductImageUpload($_FILES['product_image']);
-            
+            $uploadResult = $this->handleImageUpload($_FILES['product_image']);
             if (!$uploadResult['success']) {
                 return $this->error($uploadResult['error'], 400);
             }
             
-            // simpan produk ke database
+            // sanitasi deskripsi
+            $description = $this->sanitizeRichText($description);
+            
+            // buat produk baru
             $productData = [
                 'store_id' => $store['store_id'],
                 'product_name' => $productName,
@@ -180,15 +193,20 @@ class ProductController extends Controller
                 'price' => (int)$price,
                 'stock' => (int)$stock,
                 'main_image_path' => $uploadResult['path']
-            ];           
-            $product = $this->productModel->create($productData);            
-            if (!$product) {
-                return $this->error('Gagal Menyimpan Produk', 500);
+            ];
+            
+            $newProduct = $this->productModel->create($productData);
+            
+            if (!$newProduct) {
+                return $this->error('Gagal Membuat Produk', 500);
             }
             
             // simpan kategori produk
-            $this->productModel->updateCategories($product['product_id'], $categoryIds);           
-            return $this->success('Produk Berhasil Ditambahkan', $product);
+            foreach ($categoryIds as $categoryId) {
+                $this->productModel->addCategory($newProduct['product_id'], $categoryId);
+            }
+            
+            return $this->success('Produk Berhasil Ditambahkan', $newProduct);
             
         } catch (Exception $e) {
             return $this->error('Terjadi Kesalahan: ' . $e->getMessage(), 500);
@@ -197,18 +215,22 @@ class ProductController extends Controller
 
     // halaman edit product
     public function edit() {
-        // TO DO validasi user adalah seller yang sudah login
-        $userId = $_SESSION['user']['user_id'] ?? null;        
+        // ambil user dari session
+        $userId = $_SESSION['user']['user_id'] ?? null;
+        
         if (!$userId) {
             return $this->redirect('/login');
-        }        
-        $store = $this->storeModel->findByUserId($userId);       
+        }
+        
+        $store = $this->storeModel->findByUserId($userId);
+        
         if (!$store) {
             return $this->error('Toko Tidak Ditemukan', 404);
         }
         
         // ambil product_id dari URL
-        $productId = $this->input('product_id');        
+        $productId = $this->input('product_id');
+        
         if (!$productId) {
             return $this->redirect('/seller/products');
         }
@@ -216,9 +238,11 @@ class ProductController extends Controller
         // validasi kepemilikan produk
         if (!$this->productModel->isOwnedByStore($productId, $store['store_id'])) {
             return $this->error('Produk Tidak Ditemukan', 404);
-        }       
+        }
+        
         // ambil data produk dengan kategorinya
         $product = $this->productModel->getProductWithCategories($productId);
+        
         // ambil semua kategori untuk dropdown
         $categories = $this->categoryModel->all();
         
@@ -232,117 +256,7 @@ class ProductController extends Controller
     // API untuk update produk
     public function update() {
         try {
-            // TO DO validasi user adalah seller yang sudah login
-            $userId = $_SESSION['user']['user_id'] ?? null;           
-            if (!$userId) {
-                return $this->error('Unauthorized', 401);
-            }          
-            $store = $this->storeModel->findByUserId($userId);
-            
-            if (!$store) {
-                return $this->error('Toko Tidak Ditemukan', 404);
-            }           
-            // ambil product_id
-            $productId = $this->input('product_id');
-            
-            if (!$productId) {
-                return $this->error('Product ID Tidak Valid', 400);
-            }
-            
-            // validasi kepemilikan produk
-            if (!$this->productModel->isOwnedByStore($productId, $store['store_id'])) {
-                return $this->error('Produk Tidak Ditemukan', 404);
-            }
-            
-            // ambil data dari request
-            $productName = $this->input('product_name');
-            $description = $this->input('description');
-            $price = $this->input('price');
-            $stock = $this->input('stock');
-            $categoryIds = $this->input('category_ids', []);
-            
-            // validasi input server-side
-            $errors = [];         
-            if (empty($productName)) {
-                $errors[] = 'Nama produk tidak boleh kosong';
-            } elseif (strlen($productName) > 200) {
-                $errors[] = 'Nama produk maksimal 200 karakter';
-            }
-            
-            if (empty($description)) {
-                $errors[] = 'Deskripsi tidak boleh kosong';
-            } elseif (strlen($description) > 5000) {
-                $errors[] = 'Deskripsi maksimal 5000 karakter';
-            }
-            
-            if (!is_numeric($price) || $price < 1000) {
-                $errors[] = 'Harga minimal Rp 1.000';
-            }
-            
-            if (!is_numeric($stock) || $stock < 0) {
-                $errors[] = 'Stok minimal 0';
-            }
-            
-            if (empty($categoryIds) || !is_array($categoryIds)) {
-                $errors[] = 'Pilih minimal 1 kategori';
-            }
-            
-            if (!empty($errors)) {
-                return $this->error(implode(', ', $errors), 400);
-            }
-            
-            // sanitasi deskripsi rich text
-            $description = $this->sanitizeRichText($description);
-            
-            // data untuk update
-            $productData = [
-                'product_name' => $productName,
-                'description' => $description,
-                'price' => (int)$price,
-                'stock' => (int)$stock
-            ];
-            
-            // handle upload foto baru jika ada
-            if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] !== UPLOAD_ERR_NO_FILE) {
-                $uploadResult = $this->handleProductImageUpload($_FILES['product_image']);
-                
-                if (!$uploadResult['success']) {
-                    return $this->error($uploadResult['error'], 400);
-                }
-                
-                // hapus foto lama
-                $oldProduct = $this->productModel->find($productId);
-                if (!empty($oldProduct['main_image_path'])) {
-                    $oldFilePath = dirname(dirname(dirname(__DIR__))) . '/public' . $oldProduct['main_image_path'];
-                    if (file_exists($oldFilePath)) {
-                        unlink($oldFilePath);
-                    }
-                }
-                
-                $productData['main_image_path'] = $uploadResult['path'];
-            }
-            
-            // update produk
-            $product = $this->productModel->update($productId, $productData);
-            
-            if (!$product) {
-                return $this->error('Gagal Mengupdate Produk', 500);
-            }
-            
-            // update kategori produk
-            $this->productModel->updateCategories($productId, $categoryIds);
-            
-            return $this->success('Produk Berhasil Diupdate', $product);
-            
-        } catch (Exception $e) {
-            return $this->error('Terjadi Kesalahan: ' . $e->getMessage(), 500);
-        }
-    }
-
-    // API untuk delete produk (soft delete)
-    public function delete() {
-        try {
-            // TO DO validasi user adalah seller yang sudah login
+            // ambil user dari session
             $userId = $_SESSION['user']['user_id'] ?? null;
             
             if (!$userId) {
@@ -367,17 +281,144 @@ class ProductController extends Controller
                 return $this->error('Produk Tidak Ditemukan', 404);
             }
             
-            // cek apakah produk memiliki order pending
-            if ($this->productModel->hasPendingOrders($productId)) {
-                return $this->error('Produk Tidak Dapat Dihapus Karena Masih Ada Order Pending', 400);
+            // ambil data dari request
+            $productName = $this->input('product_name');
+            $description = $this->input('description');
+            $price = $this->input('price');
+            $stock = $this->input('stock');
+            $categoryIds = $this->input('category_ids', []);
+            
+            // validasi input server-side
+            $errors = [];
+            
+            if (empty($productName)) {
+                $errors[] = 'Nama produk tidak boleh kosong';
+            } elseif (strlen($productName) > 200) {
+                $errors[] = 'Nama produk maksimal 200 karakter';
             }
             
-            // soft delete produk
-            $result = $this->productModel->softDelete($productId);
+            if (empty($description)) {
+                $errors[] = 'Deskripsi tidak boleh kosong';
+            } elseif (strlen($description) > 1000) {
+                $errors[] = 'Deskripsi maksimal 1000 karakter';
+            }
+            
+            if (empty($price) || !is_numeric($price)) {
+                $errors[] = 'Harga harus berupa angka';
+            } elseif ($price < 1000) {
+                $errors[] = 'Harga minimal Rp 1.000';
+            }
+            
+            if (!isset($stock) || !is_numeric($stock)) {
+                $errors[] = 'Stok harus berupa angka';
+            } elseif ($stock < 0) {
+                $errors[] = 'Stok tidak boleh negatif';
+            }
+            
+            if (empty($categoryIds) || !is_array($categoryIds)) {
+                $errors[] = 'Pilih minimal satu kategori';
+            }
+            
+            if (!empty($errors)) {
+                return $this->error('Validasi Gagal', 400, ['errors' => $errors]);
+            }
+            
+            // ambil data produk lama
+            $oldProduct = $this->productModel->find($productId);
+            $imagePath = $oldProduct['main_image_path'];
+            
+            // handle upload foto baru jika ada
+            if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] === UPLOAD_ERR_OK) {
+                $uploadResult = $this->handleImageUpload($_FILES['product_image']);
+                if (!$uploadResult['success']) {
+                    return $this->error($uploadResult['error'], 400);
+                }
+                
+                // hapus foto lama
+                if ($imagePath && file_exists($this->uploadDir . basename($imagePath))) {
+                    @unlink($this->uploadDir . basename($imagePath));
+                }
+                
+                $imagePath = $uploadResult['path'];
+            }
+            
+            // sanitasi deskripsi
+            $description = $this->sanitizeRichText($description);
+            
+            // update produk
+            $updateData = [
+                'product_name' => $productName,
+                'description' => $description,
+                'price' => (int)$price,
+                'stock' => (int)$stock,
+                'main_image_path' => $imagePath
+            ];
+            
+            $result = $this->productModel->update($productId, $updateData);
+            
+            if (!$result) {
+                return $this->error('Gagal Mengupdate Produk', 500);
+            }
+            
+            // update kategori produk
+            $this->productModel->removeAllCategories($productId);
+            foreach ($categoryIds as $categoryId) {
+                $this->productModel->addCategory($productId, $categoryId);
+            }
+            
+            return $this->success('Produk Berhasil Diupdate', $updateData);
+            
+        } catch (Exception $e) {
+            return $this->error('Terjadi Kesalahan: ' . $e->getMessage(), 500);
+        }
+    }
+
+    // API untuk delete produk
+    public function delete() {
+        try {
+            // ambil user dari session
+            $userId = $_SESSION['user']['user_id'] ?? null;
+            
+            if (!$userId) {
+                return $this->error('Unauthorized', 401);
+            }
+            
+            $store = $this->storeModel->findByUserId($userId);
+            
+            if (!$store) {
+                return $this->error('Toko Tidak Ditemukan', 404);
+            }
+            
+            // ambil product_id
+            $productId = $this->input('product_id');
+            
+            if (!$productId) {
+                return $this->error('Product ID Tidak Valid', 400);
+            }
+            
+            // validasi kepemilikan produk
+            if (!$this->productModel->isOwnedByStore($productId, $store['store_id'])) {
+                return $this->error('Produk Tidak Ditemukan', 404);
+            }
+            
+            // cek apakah ada order pending dengan produk ini
+            // TODO: implementasi validasi cascade delete
+            
+            // ambil data produk untuk hapus foto
+            $product = $this->productModel->find($productId);
+            
+            // hapus produk dari database
+            $result = $this->productModel->delete($productId);
             
             if (!$result) {
                 return $this->error('Gagal Menghapus Produk', 500);
-            }           
+            }
+            
+            // hapus foto produk
+            if ($product['main_image_path'] && file_exists($this->uploadDir . basename($product['main_image_path']))) {
+                @unlink($this->uploadDir . basename($product['main_image_path']));
+            }
+            
             return $this->success('Produk Berhasil Dihapus');
             
         } catch (Exception $e) {
@@ -385,49 +426,48 @@ class ProductController extends Controller
         }
     }
 
-    // handle upload foto produk
-    private function handleProductImageUpload($file) {
+    // handle upload image produk
+    private function handleImageUpload($file) {
         // validasi error upload
         if ($file['error'] !== UPLOAD_ERR_OK) {
             return ['success' => false, 'error' => 'Upload Gagal'];
         }
-        
-        // validasi ukuran
+
+        // validasi ukuran file (max 2MB)
         $maxSize = 2 * 1024 * 1024;
         if ($file['size'] > $maxSize) {
             return ['success' => false, 'error' => 'Ukuran File Maksimal 2MB'];
         }
-        
+
         // validasi tipe file
         $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
         $mimeType = finfo_file($finfo, $file['tmp_name']);
-        finfo_close($finfo);       
+        finfo_close($finfo);
+
         if (!in_array($mimeType, $allowedTypes)) {
             return ['success' => false, 'error' => 'Tipe File Harus JPG, PNG, atau WEBP'];
         }
-        
+
         // generate nama file unik
         $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
         $filename = uniqid('product_') . '.' . $extension;
         $filepath = $this->uploadDir . $filename;
-        
+
         // pindahkan file
         if (!move_uploaded_file($file['tmp_name'], $filepath)) {
             return ['success' => false, 'error' => 'Gagal Menyimpan File'];
-        }        
+        }
+
         // return path relatif untuk disimpan di database
         return ['success' => true, 'path' => '/uploads/products/' . $filename];
     }
 
-    // sanitasi rich text dari quill.js
+    // sanitasi rich text dari quill editor
     private function sanitizeRichText($html) {
-        // daftar tag yang diizinkan dari quill.js
-        $allowedTags = '<p><br><strong><em><u><s><ol><ul><li><blockquote><h1><h2><h3><a>';      
-        // strip tag yang tidak diizinkan
-        $cleaned = strip_tags($html, $allowedTags);       
-        // bersihkan atribut berbahaya
-        $cleaned = preg_replace('/<([^>]+) on\w+="[^"]*"/i', '<$1', $cleaned);      
-        return $cleaned;
+        // TODO: implementasi sanitasi HTML yang lebih ketat
+        // untuk sementara gunakan strip_tags dengan whitelist tag
+        $allowedTags = '<p><br><strong><em><u><ol><ul><li><h1><h2><h3>';
+        return strip_tags($html, $allowedTags);
     }
 }
