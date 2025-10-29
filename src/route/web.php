@@ -17,8 +17,10 @@ $router->get('/login', 'AuthController@loginForm')
        ->middleware('guest');
 
 // submit login form
+// NOTE: tidak pakai middleware 'guest' untuk menghindari redirect loop
+// karena session baru di-set setelah validasi berhasil
 $router->post('/login', 'AuthController@login')
-       ->middleware(['guest', 'csrf']);
+       ->middleware('csrf');
 
 // halaman register form
 $router->get('/register', 'AuthController@registerForm')
@@ -26,7 +28,7 @@ $router->get('/register', 'AuthController@registerForm')
 
 // submit register form
 $router->post('/register', 'AuthController@register')
-       ->middleware(['guest', 'csrf']);
+       ->middleware('csrf');
 
 // ============================================
 // AUTHENTICATED ROUTES (sudah login)

@@ -4,11 +4,11 @@ namespace Service;
 
 class AuthService
 {
-    // Ctor
+    // constructor
     public function __construct() {
     }
 
-    // Save User Data in Session after Login
+    // save user data in session after login
     public function loginUser($user) {
         $_SESSION['user_id'] = $user['user_id'];
         $_SESSION['user_email'] = $user['email'];
@@ -16,26 +16,35 @@ class AuthService
         $_SESSION['user_role'] = $user['role'];
         $_SESSION['logged_in'] = true;
 
-        session_regenerate_id(true);
+        // regenerate session id untuk keamanan
+        // PENTING: gunakan false agar session data tidak hilang
+        session_regenerate_id(false);
+        
+        // commit session sebelum redirect
+        // ini memastikan session ter-write ke storage
+        session_write_close();
+        
+        // restart session untuk request berikutnya
+        session_start();
     }
 
-    // Logout User by Destroying Session
+    // logout user by destroying session
     public function logoutUser() {
         session_unset();
         session_destroy();
     }
 
-    // Check if User is Logged In
+    // check if user is logged in
     public function isLoggedIn() {
         return isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true;
     }
 
-    // Get Current User ID
+    // get current user id
     public function getCurrentUserId() {
         return $_SESSION['user_id'] ?? null;
     }
 
-    // Get Current User Data
+    // get current user data
     public function getCurrentUser() {
         if (!$this->isLoggedIn()) {
             return null;
@@ -49,22 +58,22 @@ class AuthService
         ];
     }
 
-    // Check if Current User is Seller
+    // check if current user is seller
     public function isSeller() {
         return $this->isLoggedIn() && ($_SESSION['user_role'] ?? '') === 'SELLER';
     }
 
-    // Check if Current User is Buyer
+    // check if current user is buyer
     public function isBuyer() {
         return $this->isLoggedIn() && ($_SESSION['user_role'] ?? '') === 'BUYER';
     }
 
-    // Set Flash Message
+    // set flash message
     public function setFlashMessage($type, $message) {
         $_SESSION['flash_' . $type] = $message;
     }
 
-    // Get Flash Message
+    // get flash message
     public function getFlashMessage($type) {
         $key = 'flash_' . $type;
         $message = $_SESSION[$key] ?? null;
@@ -74,7 +83,7 @@ class AuthService
         return $message;
     }
 
-    // Check if Current User can Access Resource
+    // check if current user can access resource
     public function canAccessResource($resourceUserId) {
         if (!$this->isLoggedIn()) {
             return false;

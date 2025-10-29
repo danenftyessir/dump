@@ -89,14 +89,15 @@ $container->set('AuthMiddleware', function($c) {
 // BINDING CONTROLLERS
 // ============================================
 
-// auth controller
+// auth controller - dengan store model untuk auto-create toko
 $container->set('AuthController', function($c) {
     return new Controller\AuthController(
         $c->get('User'),
         $c->get('AuthService'),
         $c->get('UserValidator'),
         $c->get('CSRFService'),
-        $c->get('LoggerService')
+        $c->get('LoggerService'),
+        $c->get('Store')  // tambahkan store model
     );
 });
 

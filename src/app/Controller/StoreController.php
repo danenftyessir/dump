@@ -31,8 +31,9 @@ class StoreController extends Controller
     // render halaman dashboard seller
     public function dashboard() {
         try {
-            // ambil user dari session
-            $currentUserId = $_SESSION['user']['user_id'] ?? null;
+            // ambil user id dari session
+            // NOTE: session structure adalah flat: $_SESSION['user_id'], bukan $_SESSION['user']['user_id']
+            $currentUserId = $_SESSION['user_id'] ?? null;
             
             if (!$currentUserId) {
                 return $this->redirect('/login');
@@ -74,72 +75,64 @@ class StoreController extends Controller
         }
     }
 
-    // membuat toko baru saat registrasi seller
+    // API untuk mendapatkan data toko seller yang sedang login
+    public function getMyStore() {
+        try {
+            $currentUserId = $_SESSION['user_id'] ?? null;
+            
+            if (!$currentUserId) {
+                return $this->error('Unauthorized', 401);
+            }
+
+            $store = $this->storeModel->findByUserId($currentUserId);
+            
+            if (!$store) {
+                return $this->error('Toko Tidak Ditemukan', 404);
+            }
+
+            return $this->success('Data Toko Berhasil Diambil', $store);
+
+        } catch (Exception $e) {
+            return $this->error('Terjadi Kesalahan: ' . $e->getMessage(), 500);
+        }
+    }
+
+    // API untuk membuat toko baru
     public function create() {
         try {
-            $userId = $this->input('user_id');
-            $storeName = $this->input('store_name');
-            $storeDescription = $this->input('store_description');
-
-            // validasi input server-side
-            if (empty($userId)) {
-                return $this->error('User ID Tidak Boleh Kosong', 400);
+            $currentUserId = $_SESSION['user_id'] ?? null;
+            
+            if (!$currentUserId) {
+                return $this->error('Unauthorized', 401);
             }
 
-            if (empty($storeName)) {
-                return $this->error('Nama Toko Tidak Boleh Kosong', 400);
-            }
-
-            if (strlen($storeName) > 100) {
-                return $this->error('Nama Toko Maksimal 100 Karakter', 400);
-            }
-
-            if (empty($storeDescription)) {
-                return $this->error('Deskripsi Toko Tidak Boleh Kosong', 400);
-            }
-
-            // validasi user adalah seller
-            $user = $this->userModel->find($userId);
-            if (!$user) {
-                return $this->error('User Tidak Ditemukan', 404);
-            }
-
-            if ($user['role'] !== 'SELLER') {
-                return $this->error('User Harus Berperan Sebagai Seller', 403);
-            }
-
-            // cek user sudah punya toko atau belum
-            $existingStore = $this->storeModel->findByUserId($userId);
+            // cek apakah seller sudah punya toko
+            $existingStore = $this->storeModel->findByUserId($currentUserId);
             if ($existingStore) {
-                return $this->error('User Sudah Memiliki Toko', 400);
+                return $this->error('Anda Sudah Memiliki Toko', 400);
             }
 
-            // cek apakah nama toko sudah dipakai
-            $existingName = $this->storeModel->findByStoreName($storeName);
-            if ($existingName) {
-                return $this->error('Nama Toko Sudah Digunakan', 400);
+            // ambil data input
+            $storeName = $_POST['store_name'] ?? '';
+            $storeDescription = $_POST['store_description'] ?? '';
+
+            // validasi
+            if (empty($storeName)) {
+                return $this->error('Nama Toko Wajib Diisi', 400);
             }
 
-            // sanitasi deskripsi toko (rich text)
-            $storeDescription = $this->sanitizeRichText($storeDescription);
-
-            // handle upload logo toko
+            // handle upload logo jika ada
             $logoPath = null;
             if (isset($_FILES['store_logo']) && $_FILES['store_logo']['error'] === UPLOAD_ERR_OK) {
-                $uploadResult = $this->handleLogoUpload($_FILES['store_logo']);
-                if (!$uploadResult['success']) {
-                    return $this->error($uploadResult['error'], 400);
-                }
-                $logoPath = $uploadResult['path'];
+                $logoPath = $this->handleLogoUpload($_FILES['store_logo']);
             }
 
             // buat toko baru
             $storeData = [
-                'user_id' => $userId,
+                'user_id' => $currentUserId,
                 'store_name' => $storeName,
                 'store_description' => $storeDescription,
-                'store_logo_path' => $logoPath,
-                'balance' => 0
+                'store_logo_path' => $logoPath
             ];
 
             $newStore = $this->storeModel->create($storeData);
@@ -155,162 +148,72 @@ class StoreController extends Controller
         }
     }
 
-    // update informasi toko seller
+    // API untuk update informasi toko
     public function update() {
         try {
-            // ambil user_id dari session
-            $currentUserId = $_SESSION['user']['user_id'] ?? null;
+            $currentUserId = $_SESSION['user_id'] ?? null;
             
             if (!$currentUserId) {
-                return $this->error('User Tidak Terautentikasi', 401);
+                return $this->error('Unauthorized', 401);
             }
 
-            // ambil toko milik user
+            // ambil data toko
             $store = $this->storeModel->findByUserId($currentUserId);
             
             if (!$store) {
                 return $this->error('Toko Tidak Ditemukan', 404);
             }
 
-            // ambil data update dari request
-            $storeName = $this->input('store_name');
-            $storeDescription = $this->input('store_description');
-
-            // validasi input
-            if (empty($storeName)) {
-                return $this->error('Nama Toko Tidak Boleh Kosong', 400);
+            // ambil data input
+            $updateData = [];
+            
+            if (isset($_POST['store_name'])) {
+                $updateData['store_name'] = $_POST['store_name'];
             }
-
-            if (strlen($storeName) > 100) {
-                return $this->error('Nama Toko Maksimal 100 Karakter', 400);
+            
+            if (isset($_POST['store_description'])) {
+                $updateData['store_description'] = $_POST['store_description'];
             }
-
-            if (empty($storeDescription)) {
-                return $this->error('Deskripsi Toko Tidak Boleh Kosong', 400);
-            }
-
-            // cek apakah nama toko sudah dipakai oleh toko lain
-            if ($storeName !== $store['store_name']) {
-                $existingName = $this->storeModel->findByStoreName($storeName);
-                if ($existingName) {
-                    return $this->error('Nama Toko Sudah Digunakan', 400);
-                }
-            }
-
-            // sanitasi deskripsi toko
-            $storeDescription = $this->sanitizeRichText($storeDescription);
 
             // handle upload logo baru jika ada
-            $logoPath = $store['store_logo_path'];
             if (isset($_FILES['store_logo']) && $_FILES['store_logo']['error'] === UPLOAD_ERR_OK) {
-                $uploadResult = $this->handleLogoUpload($_FILES['store_logo']);
-                if (!$uploadResult['success']) {
-                    return $this->error($uploadResult['error'], 400);
-                }
+                $logoPath = $this->handleLogoUpload($_FILES['store_logo']);
+                $updateData['store_logo_path'] = $logoPath;
                 
                 // hapus logo lama jika ada
-                if ($logoPath && file_exists($this->uploadDir . basename($logoPath))) {
-                    @unlink($this->uploadDir . basename($logoPath));
+                if (!empty($store['store_logo_path']) && file_exists($this->uploadDir . basename($store['store_logo_path']))) {
+                    @unlink($this->uploadDir . basename($store['store_logo_path']));
                 }
-                
-                $logoPath = $uploadResult['path'];
             }
 
-            // update data toko
-            $updateData = [
-                'store_name' => $storeName,
-                'store_description' => $storeDescription,
-                'store_logo_path' => $logoPath
-            ];
+            if (empty($updateData)) {
+                return $this->error('Tidak Ada Data yang Diubah', 400);
+            }
 
-            $result = $this->storeModel->update($store['store_id'], $updateData);
+            // update toko
+            $updated = $this->storeModel->update($store['store_id'], $updateData);
 
-            if (!$result) {
+            if (!$updated) {
                 return $this->error('Gagal Mengupdate Toko', 500);
             }
 
-            return $this->success('Toko Berhasil Diupdate', $updateData);
+            return $this->success('Toko Berhasil Diupdate');
 
         } catch (Exception $e) {
             return $this->error('Terjadi Kesalahan: ' . $e->getMessage(), 500);
         }
     }
 
-    // ambil data toko milik seller yang sedang login
-    public function getMyStore() {
-        try {
-            // ambil user_id dari session
-            $currentUserId = $_SESSION['user']['user_id'] ?? null;
-            
-            if (!$currentUserId) {
-                return $this->error('User Tidak Terautentikasi', 401);
-            }
-
-            $store = $this->storeModel->findByUserId($currentUserId);
-            
-            if (!$store) {
-                return $this->error('Toko Tidak Ditemukan', 404);
-            }
-
-            return $this->success('Data Toko', $store);
-
-        } catch (Exception $e) {
-            return $this->error('Terjadi Kesalahan: ' . $e->getMessage(), 500);
-        }
-    }
-
-    // ambil statistik toko untuk dashboard
-    public function getStats() {
-        try {
-            // ambil user dari session
-            $currentUserId = $_SESSION['user']['user_id'] ?? null;
-            
-            if (!$currentUserId) {
-                return $this->error('User Tidak Terautentikasi', 401);
-            }
-
-            // ambil toko milik user
-            $store = $this->storeModel->findByUserId($currentUserId);
-            
-            if (!$store) {
-                return $this->error('Toko Tidak Ditemukan', 404);
-            }
-
-            $storeId = $store['store_id'];
-
-            // ambil statistik produk
-            $totalProducts = $this->storeModel->getTotalProducts($storeId);
-            $lowStockProducts = $this->storeModel->getLowStockProducts($storeId, 10);
-
-            // ambil statistik order menggunakan orderModel
-            $pendingOrders = $this->orderModel->getPendingOrdersCount($storeId);
-            $totalRevenue = $this->orderModel->getTotalRevenue($storeId);
-
-            $stats = [
-                'total_products' => $totalProducts,
-                'low_stock_products' => $lowStockProducts,
-                'pending_orders' => $pendingOrders,
-                'total_revenue' => $totalRevenue
-            ];
-
-            return $this->success('Statistik Toko', $stats);
-
-        } catch (Exception $e) {
-            return $this->error('Terjadi Kesalahan: ' . $e->getMessage(), 500);
-        }
-    }
-
-    // tampilkan detail toko (public)
+    // halaman detail toko untuk public
     public function show() {
         try {
-            $storeId = $this->input('id');
+            $storeId = $_GET['id'] ?? null;
             
             if (!$storeId) {
                 return $this->error('Store ID Tidak Valid', 400);
             }
 
-            // ambil data toko dengan informasi owner
-            $store = $this->storeModel->getStoreWithOwner($storeId);
+            $store = $this->storeModel->find($storeId);
             
             if (!$store) {
                 return $this->error('Toko Tidak Ditemukan', 404);
@@ -326,48 +229,62 @@ class StoreController extends Controller
         }
     }
 
-    // handle upload logo toko
+    // API untuk mendapatkan statistik dashboard
+    public function getStats() {
+        try {
+            $currentUserId = $_SESSION['user_id'] ?? null;
+            
+            if (!$currentUserId) {
+                return $this->error('Unauthorized', 401);
+            }
+
+            $store = $this->storeModel->findByUserId($currentUserId);
+            
+            if (!$store) {
+                return $this->error('Toko Tidak Ditemukan', 404);
+            }
+
+            $storeId = $store['store_id'];
+            
+            $stats = [
+                'total_products' => $this->storeModel->getTotalProducts($storeId),
+                'low_stock_products' => $this->storeModel->getLowStockProducts($storeId, 10),
+                'pending_orders' => $this->orderModel->getPendingOrdersCount($storeId),
+                'total_revenue' => $this->orderModel->getTotalRevenue($storeId)
+            ];
+
+            return $this->success('Statistik Berhasil Diambil', $stats);
+
+        } catch (Exception $e) {
+            return $this->error('Terjadi Kesalahan: ' . $e->getMessage(), 500);
+        }
+    }
+
+    // helper function untuk handle upload logo
     private function handleLogoUpload($file) {
-        // validasi error upload
-        if ($file['error'] !== UPLOAD_ERR_OK) {
-            return ['success' => false, 'error' => 'Upload Gagal'];
+        // validasi file
+        $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+        $maxSize = 2 * 1024 * 1024; // 2MB
+
+        if (!in_array($file['type'], $allowedTypes)) {
+            throw new Exception('Format File Tidak Didukung. Gunakan JPG, PNG, atau GIF');
         }
 
-        // validasi ukuran file (max 2MB)
-        $maxSize = 2 * 1024 * 1024;
         if ($file['size'] > $maxSize) {
-            return ['success' => false, 'error' => 'Ukuran File Maksimal 2MB'];
-        }
-
-        // validasi tipe file
-        $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-        $finfo = finfo_open(FILEINFO_MIME_TYPE);
-        $mimeType = finfo_file($finfo, $file['tmp_name']);
-        finfo_close($finfo);
-
-        if (!in_array($mimeType, $allowedTypes)) {
-            return ['success' => false, 'error' => 'Tipe File Harus JPG, PNG, atau WEBP'];
+            throw new Exception('Ukuran File Terlalu Besar. Maksimal 2MB');
         }
 
         // generate nama file unik
         $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-        $filename = uniqid('store_logo_') . '.' . $extension;
-        $filepath = $this->uploadDir . $filename;
+        $filename = 'store_' . uniqid() . '.' . $extension;
+        $targetPath = $this->uploadDir . $filename;
 
-        // pindahkan file
-        if (!move_uploaded_file($file['tmp_name'], $filepath)) {
-            return ['success' => false, 'error' => 'Gagal Menyimpan File'];
+        // upload file
+        if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
+            throw new Exception('Gagal Mengupload File');
         }
 
-        // return path relatif untuk disimpan di database
-        return ['success' => true, 'path' => '/uploads/stores/' . $filename];
-    }
-
-    // sanitasi rich text dari quill editor
-    private function sanitizeRichText($html) {
-        // TODO: implementasi sanitasi HTML yang lebih ketat
-        // untuk sementara gunakan strip_tags dengan whitelist tag
-        $allowedTags = '<p><br><strong><em><u><ol><ul><li><h1><h2><h3>';
-        return strip_tags($html, $allowedTags);
+        // return relative path
+        return '/uploads/stores/' . $filename;
     }
 }

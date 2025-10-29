@@ -18,17 +18,19 @@ class AuthController extends Controller
     private UserValidator $validator;
     private CSRFService $csrfService;
     private LoggerService $logger;
+    private $storeModel;
 
-    // Ctor
-    public function __construct(User $userModel, AuthService $authService, UserValidator $validator, CSRFService $csrfService, LoggerService $logger) {
+    // constructor
+    public function __construct(User $userModel, AuthService $authService, UserValidator $validator, CSRFService $csrfService, LoggerService $logger, $storeModel = null) {
         $this->userModel = $userModel;
         $this->authService = $authService;
         $this->validator = $validator;
         $this->csrfService = $csrfService;
         $this->logger = $logger;
+        $this->storeModel = $storeModel;
     }
     
-    // Menampilkan Halaman Form Login
+    // menampilkan halaman form login
     public function loginForm() {
         $errorMessage = $this->authService->getFlashMessage('error');
         $successMessage = $this->authService->getFlashMessage('success');
@@ -44,30 +46,35 @@ class AuthController extends Controller
         ]);
     }
 
-    // Memproses Data dari Form Login
+    // memproses data dari form login
     public function login() {
         try {
-            // Ambil data input
+            // ambil data input
             $loginData = [
                 'email' => $_POST['email'] ?? '',
                 'password' => $_POST['password'] ?? ''
             ];
 
-            // Validasi input
+            // validasi input
             $this->validator->validateLogin($loginData);
 
-            // Ambil User
+            // ambil user
             $user = $this->userModel->findByEmailWithPassword($loginData['email']);
 
-            // Verifikasi Password
+            // verifikasi password
             if (!$user || !$this->userModel->verifyPassword($loginData['password'], $user['password'])) {
                 throw new Exception('Invalid email or password.');
             }
             
-            // Set Session
+            // set session
             $this->authService->loginUser($user);
 
-            // Redirect berdasarkan Role
+            // bersihkan output buffer sebelum redirect
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
+
+            // redirect berdasarkan role
             if ($user['role'] === 'SELLER') {
                 $this->redirect('/seller/dashboard');
             } else {
@@ -80,7 +87,7 @@ class AuthController extends Controller
             $this->authService->setFlashMessage('old_input', $loginData);
             $this->redirect('/login');
         } catch (Exception $e) {
-            // Write log error
+            // write log error
             $this->logger->logError('Login failed', [
                 'email' => $_POST['email'] ?? 'unknown',
                 'error' => $e->getMessage(),
@@ -91,16 +98,14 @@ class AuthController extends Controller
         }
     }
 
-    // Menampilkan Halaman Form Registrasi
+    // menampilkan halaman form registrasi
     public function registerForm() {
         $errorMessage = $this->authService->getFlashMessage('error');
         $successMessage = $this->authService->getFlashMessage('success');
         $errors = $this->authService->getFlashMessage('errors') ?? [];
         $oldInput = $this->authService->getFlashMessage('old_input') ?? [];
 
-
-
-        // 2. Mengirim data ke View
+        // mengirim data ke view
         $this->view('auth/register', [
             '_token' => $this->csrfService->getToken(),
             'errorMessage' => $errorMessage,
@@ -110,31 +115,52 @@ class AuthController extends Controller
         ]);
     }
 
-    // Memproses Data dari Form Registrasi
+    // memproses data dari form registrasi
     public function register() {
         try {
-            // Ambil data input
+            // ambil data input
             $userData = [
                 'name' => $_POST['name'] ?? '',
                 'email' => $_POST['email'] ?? '',
                 'password' => $_POST['password'] ?? '',
                 'address' => $_POST['address'] ?? '',
                 'password_confirm' => $_POST['password_confirm'] ?? '',
-                'role' => $_POST['role'] ?? 'BUYER' // Ambil role dari form, default BUYER
+                'role' => $_POST['role'] ?? 'BUYER'
             ];
             
-            // Validasi Input
+            // validasi input
             $this->validator->validateRegistration($userData);
 
-            // Buat User Baru
+            // buat user baru
             $newUser = $this->userModel->createUser($userData);
             
-            if ($newUser) {
-                $this->authService->setFlashMessage('success', 'Registration successful! Please login.');
-                $this->redirect('/login');
-            } else {
+            if (!$newUser) {
                 throw new Exception('Registration failed due to an unknown error.');
             }
+
+            // jika user adalah seller, auto-create toko
+            if ($userData['role'] === 'SELLER' && $this->storeModel) {
+                try {
+                    $storeData = [
+                        'user_id' => $newUser['user_id'],
+                        'store_name' => $userData['name'] . "'s Store",
+                        'store_description' => 'Welcome to my store!',
+                        'store_logo_path' => null,
+                        'balance' => 0
+                    ];
+                    
+                    $this->storeModel->create($storeData);
+                } catch (Exception $e) {
+                    // log error tapi tetap lanjut registrasi
+                    $this->logger->logError('Auto-create store failed', [
+                        'user_id' => $newUser['user_id'],
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+
+            $this->authService->setFlashMessage('success', 'Registration successful! Please login.');
+            $this->redirect('/login');
 
         } catch (ValidationException $e) {
             $this->authService->setFlashMessage('error', $e->getMessage());
@@ -142,7 +168,7 @@ class AuthController extends Controller
             $this->authService->setFlashMessage('old_input', $userData);
             $this->redirect('/register');
         } catch (Exception $e) {
-            // Write log error
+            // write log error
             $this->logger->logError('Registration failed', [
                 'email' => $_POST['email'] ?? 'unknown',
                 'name' => $_POST['name'] ?? 'unknown',
@@ -154,7 +180,7 @@ class AuthController extends Controller
         }
     }
 
-    // Menampilkan Halaman Dashboard
+    // menampilkan halaman dashboard
     public function dashboard() {
         $user = $this->authService->getCurrentUser();
         if ($user['role'] === 'SELLER') {
@@ -164,7 +190,7 @@ class AuthController extends Controller
         }
     }
 
-    // Menampilkan Profile
+    // menampilkan profile
     public function profile() {
         $user = $this->authService->getCurrentUser();
         $this->view('auth/profile', [
@@ -173,14 +199,15 @@ class AuthController extends Controller
         ]);
     }
 
-    // Logout User
+    // logout user
     public function logout() {
         $this->authService->logoutUser();
         $this->authService->setFlashMessage('success', 'You have been logged out.');
         $this->redirect('/login');
     }
 
-    // Clear Session (untuk debugging)
+    // clear session untuk debugging
+    // TODO: hapus di production
     public function clearSession() {
         session_destroy();
         session_start();
@@ -193,8 +220,9 @@ class AuthController extends Controller
         echo "<h3>Debug Info:</h3>";
         echo "<pre>";
         echo "Session ID: " . session_id() . "\n";
-        echo "Session Status: " . print_r(session_status(), true) . "\n"; // Lebih informatif
-        echo "Session Data: " . print_r($_SESSION, true);
+        echo "Session Status: " . session_status() . "\n";
+        echo "Session Data:\n";
+        print_r($_SESSION);
         echo "</pre>";
     }
 }

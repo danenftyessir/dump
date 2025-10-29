@@ -89,18 +89,19 @@ $container->set('AuthMiddleware', function($c) {
 // BINDING CONTROLLERS
 // ============================================
 
-// auth controller
+// auth controller dengan store model untuk auto-create toko
 $container->set('Controller\AuthController', function($c) {
     return new Controller\AuthController(
         $c->get('User'),
         $c->get('AuthService'),
         $c->get('UserValidator'),
         $c->get('CSRFService'),
-        $c->get('LoggerService')
+        $c->get('LoggerService'),
+        $c->get('Store')
     );
 });
 
-// store controlle
+// store controller
 $container->set('Controller\StoreController', function($c) {
     return new Controller\StoreController(
         $c->get('Store'),
@@ -141,7 +142,7 @@ $router = $container->get('Router');
 // LOAD ROUTE DEFINITIONS
 // ============================================
 
-// cek apakah web.php ada (auth routes - Fayadh)
+// cek apakah web.php ada (auth routes)
 $webRoutePath = __DIR__ . '/../../route/web.php';
 if (file_exists($webRoutePath)) {
     require_once $webRoutePath;
@@ -153,7 +154,7 @@ if (file_exists($webRoutePath)) {
     }
 }
 
-// load seller & public routes (Danen)
+// load seller & public routes
 require_once __DIR__ . '/../routes.php';
 
 // ============================================
