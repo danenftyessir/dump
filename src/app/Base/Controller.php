@@ -2,80 +2,104 @@
 
 namespace Base;
 
-use Exception;
-
-abstract class Controller
+class Controller
 {
-    protected $data = [];
+    // render view dengan data
+    protected function view($viewPath, $data = []) {
+        // extract data menjadi variables
+        extract($data);
+        
+        // construct path ke view file
+        $viewFile = dirname(dirname(__FILE__)) . '/View/' . $viewPath . '.php';
+        
+        // cek apakah file view ada
+        if (file_exists($viewFile)) {
+            require_once $viewFile;
+        } else {
+            // log error jika view tidak ditemukan
+            error_log("view tidak ditemukan: {$viewFile}");
+            http_response_code(404);
+            echo "view tidak ditemukan";
+        }
+    }
 
-    // Return JSON Response
-    protected function json($data, $status = 200) {
-        http_response_code($status);
+    // redirect ke url lain
+    protected function redirect($url) {
+        header("Location: {$url}");
+        exit;
+    }
+
+    // return json response dengan status success
+    protected function success($message, $data = null, $statusCode = 200) {
+        http_response_code($statusCode);
+        header('Content-Type: application/json');
+        
+        $response = [
+            'success' => true,
+            'message' => $message
+        ];
+        
+        if ($data !== null) {
+            $response['data'] = $data;
+        }
+        
+        echo json_encode($response);
+        exit;
+    }
+
+    // return json response dengan status error
+    protected function error($message, $statusCode = 400) {
+        http_response_code($statusCode);
+        header('Content-Type: application/json');
+        
+        echo json_encode([
+            'success' => false,
+            'message' => $message
+        ]);
+        exit;
+    }
+
+    // return json response
+    protected function json($data, $statusCode = 200) {
+        http_response_code($statusCode);
         header('Content-Type: application/json');
         echo json_encode($data);
         exit;
     }
 
-    // Return Success JSON Response
-    protected function success($message = 'Success', $data = null) {
-        $response = ['success' => true, 'message' => $message];
-        if ($data !== null) {
-            $response['data'] = $data;
-        }
-        return $this->json($response);
+    // get request method
+    protected function getMethod() {
+        return $_SERVER['REQUEST_METHOD'];
     }
 
-    // Return Error JSON Response
-    protected function error($message = 'Error', $status = 400, $data = null) {
-        $response = ['success' => false, 'error' => $message];
-        if ($data !== null) {
-            $response['data'] = $data;
-        }
-        return $this->json($response, $status);
+    // check if request is ajax
+    protected function isAjax() {
+        return !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+               strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
     }
 
-    // Set Data for View
-    protected function set($key, $value = null) {
-        if (is_array($key)) {
-            $this->data = array_merge($this->data, $key);
-        } else {
-            $this->data[$key] = $value;
-        }
-    }
-
-    // Render view template
-    protected function view($template, $data = []) {
-        $viewData = array_merge($this->data, $data);
+    // get all input data
+    protected function getInput() {
+        $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
         
-        extract($viewData);
-        
-        $templatePath = $this->getTemplatePath($template);
-        
-        if (file_exists($templatePath)) {
-            ob_start();
-            include $templatePath;
-            $content = ob_get_clean();
-            echo $content;
-        } else {
-            throw new Exception("View template not found: {$template}");
-        }
-    }
-
-    // Get Template Path
-    private function getTemplatePath($template) {
-        $viewPath = dirname(__DIR__) . '/View';
-        
-        if (!pathinfo($template, PATHINFO_EXTENSION)) {
-            $template .= '.php';
+        if (strpos($contentType, 'application/json') !== false) {
+            $input = file_get_contents('php://input');
+            return json_decode($input, true) ?? [];
         }
         
-        return $viewPath . '/' . $template;
+        return array_merge($_GET, $_POST);
     }
 
-    // Redirect to URL
-    protected function redirect($url, $status = 302) {
-        http_response_code($status);
-        header("Location: {$url}");
-        exit;
+    // validate csrf token
+    protected function validateCsrf() {
+        $token = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? null;
+        
+        if (!$token) {
+            return false;
+        }
+        
+        $sessionToken = $_SESSION['csrf_token'] ?? null;
+        
+        return $token === $sessionToken;
     }
 }

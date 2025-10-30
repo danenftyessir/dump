@@ -31,7 +31,6 @@ class ProductController extends Controller
     // halaman product management seller
     public function index() {
         // ambil user id dari session
-        // NOTE: session structure adalah flat: $_SESSION['user_id']
         $userId = $_SESSION['user_id'] ?? null;
         
         if (!$userId) {
@@ -42,7 +41,7 @@ class ProductController extends Controller
         $store = $this->storeModel->findByUserId($userId);
         
         if (!$store) {
-            return $this->error('Toko Tidak Ditemukan', 404);
+            return $this->error('toko tidak ditemukan', 404);
         }
         
         // ambil semua kategori untuk filter
@@ -54,21 +53,21 @@ class ProductController extends Controller
         ]);
     }
     
-    // API untuk mendapatkan produk seller dengan filter
+    // api untuk mendapatkan produk seller dengan filter
     public function getSellerProducts() {
         try {
             // ambil user id dari session
             $userId = $_SESSION['user_id'] ?? null;
             
             if (!$userId) {
-                return $this->error('Unauthorized', 401);
+                return $this->error('unauthorized', 401);
             }
             
             // ambil store_id seller
             $store = $this->storeModel->findByUserId($userId);
             
             if (!$store) {
-                return $this->error('Toko Tidak Ditemukan', 404);
+                return $this->error('toko tidak ditemukan', 404);
             }
             
             // ambil filter dari query string
@@ -83,10 +82,10 @@ class ProductController extends Controller
             
             $result = $this->productModel->getProductsForSeller($store['store_id'], $filters);
             
-            return $this->success('Produk Berhasil Diambil', $result);
+            return $this->success('produk berhasil diambil', $result);
             
         } catch (Exception $e) {
-            return $this->error('Terjadi Kesalahan: ' . $e->getMessage(), 500);
+            return $this->error('terjadi kesalahan: ' . $e->getMessage(), 500);
         }
     }
 
@@ -103,7 +102,7 @@ class ProductController extends Controller
         $store = $this->storeModel->findByUserId($userId);
         
         if (!$store) {
-            return $this->error('Toko Tidak Ditemukan', 404);
+            return $this->error('toko tidak ditemukan', 404);
         }
         
         // ambil semua kategori
@@ -115,47 +114,68 @@ class ProductController extends Controller
         ]);
     }
 
-    // API untuk menyimpan produk baru
+    // api untuk menyimpan produk baru (FIXED)
     public function store() {
         try {
             // ambil user id dari session
             $userId = $_SESSION['user_id'] ?? null;
             
             if (!$userId) {
-                return $this->error('Unauthorized', 401);
+                return $this->error('unauthorized', 401);
             }
             
             // ambil store_id seller
             $store = $this->storeModel->findByUserId($userId);
             
             if (!$store) {
-                return $this->error('Toko Tidak Ditemukan', 404);
+                return $this->error('toko tidak ditemukan', 404);
             }
 
-            // ambil data input
-            $productName = $_POST['product_name'] ?? '';
+            // ambil data input dari POST
+            $productName = trim($_POST['product_name'] ?? '');
             $description = $_POST['description'] ?? '';
-            $price = $_POST['price'] ?? 0;
-            $stock = $_POST['stock'] ?? 0;
-            $categoryIds = $_POST['category_ids'] ?? [];
-
-            // validasi
-            if (empty($productName)) {
-                return $this->error('Nama Produk Wajib Diisi', 400);
+            $price = (int)($_POST['price'] ?? 0);
+            $stock = (int)($_POST['stock'] ?? 0);
+            
+            // handle category_ids dengan benar
+            $categoryIds = [];
+            if (isset($_POST['category_ids']) && is_array($_POST['category_ids'])) {
+                $categoryIds = $_POST['category_ids'];
             }
 
-            if ($price < 0) {
-                return $this->error('Harga Tidak Valid', 400);
+            // validasi input
+            if (empty($productName)) {
+                return $this->error('nama produk wajib diisi', 400);
+            }
+
+            if (strlen($productName) > 200) {
+                return $this->error('nama produk maksimal 200 karakter', 400);
+            }
+
+            if (empty($description)) {
+                return $this->error('deskripsi produk wajib diisi', 400);
+            }
+
+            if ($price < 1000) {
+                return $this->error('harga minimal rp 1.000', 400);
             }
 
             if ($stock < 0) {
-                return $this->error('Stok Tidak Valid', 400);
+                return $this->error('stok tidak valid', 400);
+            }
+
+            if (empty($categoryIds)) {
+                return $this->error('pilih minimal satu kategori', 400);
             }
 
             // handle upload image jika ada
             $imagePath = null;
             if (isset($_FILES['main_image']) && $_FILES['main_image']['error'] === UPLOAD_ERR_OK) {
                 $imagePath = $this->handleImageUpload($_FILES['main_image']);
+                
+                if (!$imagePath) {
+                    return $this->error('gagal mengupload gambar', 500);
+                }
             }
 
             // buat produk baru
@@ -168,23 +188,43 @@ class ProductController extends Controller
                 'main_image_path' => $imagePath
             ];
 
-            $newProduct = $this->productModel->create($productData);
+            // mulai transaksi
+            $this->productModel->beginTransaction();
 
-            if (!$newProduct) {
-                return $this->error('Gagal Membuat Produk', 500);
-            }
+            try {
+                // insert produk
+                $newProduct = $this->productModel->create($productData);
 
-            // tambahkan kategori jika ada
-            if (!empty($categoryIds) && is_array($categoryIds)) {
+                if (!$newProduct || !isset($newProduct['product_id'])) {
+                    throw new Exception('gagal membuat produk');
+                }
+
+                // tambahkan kategori
                 foreach ($categoryIds as $categoryId) {
+                    $categoryId = (int)$categoryId;
                     $this->productModel->addCategory($newProduct['product_id'], $categoryId);
                 }
+
+                // commit transaksi
+                $this->productModel->commit();
+
+                return $this->success('produk berhasil ditambahkan', $newProduct);
+
+            } catch (Exception $e) {
+                // rollback jika ada error
+                $this->productModel->rollback();
+                
+                // hapus file image jika sudah diupload
+                if ($imagePath && file_exists($this->uploadDir . $imagePath)) {
+                    unlink($this->uploadDir . $imagePath);
+                }
+                
+                throw $e;
             }
 
-            return $this->success('Produk Berhasil Ditambahkan', $newProduct);
-
         } catch (Exception $e) {
-            return $this->error('Terjadi Kesalahan: ' . $e->getMessage(), 500);
+            error_log('error di productcontroller::store - ' . $e->getMessage());
+            return $this->error('terjadi kesalahan: ' . $e->getMessage(), 500);
         }
     }
 
@@ -201,196 +241,232 @@ class ProductController extends Controller
         $productId = $_GET['id'] ?? null;
         
         if (!$productId) {
-            return $this->error('Product ID Tidak Valid', 400);
+            return $this->error('product id tidak ditemukan', 400);
         }
         
         // ambil data produk
         $product = $this->productModel->find($productId);
         
         if (!$product) {
-            return $this->error('Produk Tidak Ditemukan', 404);
+            return $this->error('produk tidak ditemukan', 404);
         }
         
-        // validasi bahwa produk milik seller ini
+        // ambil data toko seller
         $store = $this->storeModel->findByUserId($userId);
         
-        if (!$store || $product['store_id'] != $store['store_id']) {
-            return $this->error('Unauthorized', 403);
+        if (!$store) {
+            return $this->error('toko tidak ditemukan', 404);
         }
         
-        // ambil kategori produk
-        $productCategories = $this->productModel->getCategories($productId);
+        // pastikan produk milik seller ini
+        if ($product['store_id'] != $store['store_id']) {
+            return $this->error('anda tidak memiliki akses ke produk ini', 403);
+        }
         
         // ambil semua kategori
         $categories = $this->categoryModel->all();
         
+        // ambil kategori produk ini
+        $productCategories = $this->productModel->getProductCategories($productId);
+        
         return $this->view('seller/edit-product', [
             'product' => $product,
-            'productCategories' => $productCategories,
+            'store' => $store,
             'categories' => $categories,
-            'store' => $store
+            'productCategories' => $productCategories
         ]);
     }
 
-    // API untuk update produk
+    // api untuk update produk
     public function update() {
         try {
             // ambil user id dari session
             $userId = $_SESSION['user_id'] ?? null;
             
             if (!$userId) {
-                return $this->error('Unauthorized', 401);
+                return $this->error('unauthorized', 401);
             }
             
-            // ambil product id
+            // ambil product id dari post
             $productId = $_POST['product_id'] ?? null;
             
             if (!$productId) {
-                return $this->error('Product ID Tidak Valid', 400);
+                return $this->error('product id tidak ditemukan', 400);
             }
             
             // ambil data produk
             $product = $this->productModel->find($productId);
             
             if (!$product) {
-                return $this->error('Produk Tidak Ditemukan', 404);
+                return $this->error('produk tidak ditemukan', 404);
             }
             
-            // validasi bahwa produk milik seller ini
+            // ambil store_id seller
             $store = $this->storeModel->findByUserId($userId);
             
-            if (!$store || $product['store_id'] != $store['store_id']) {
-                return $this->error('Unauthorized', 403);
+            if (!$store) {
+                return $this->error('toko tidak ditemukan', 404);
+            }
+            
+            // pastikan produk milik seller ini
+            if ($product['store_id'] != $store['store_id']) {
+                return $this->error('anda tidak memiliki akses ke produk ini', 403);
             }
 
-            // ambil data update
-            $updateData = [];
-            
-            if (isset($_POST['product_name'])) {
-                $updateData['product_name'] = $_POST['product_name'];
-            }
-            
-            if (isset($_POST['description'])) {
-                $updateData['description'] = $_POST['description'];
-            }
-            
-            if (isset($_POST['price'])) {
-                $updateData['price'] = $_POST['price'];
-            }
-            
-            if (isset($_POST['stock'])) {
-                $updateData['stock'] = $_POST['stock'];
+            // ambil data input
+            $productName = trim($_POST['product_name'] ?? '');
+            $description = $_POST['description'] ?? '';
+            $price = (int)($_POST['price'] ?? 0);
+            $stock = (int)($_POST['stock'] ?? 0);
+            $categoryIds = $_POST['category_ids'] ?? [];
+
+            // validasi
+            if (empty($productName)) {
+                return $this->error('nama produk wajib diisi', 400);
             }
 
-            // handle upload image baru jika ada
+            if ($price < 1000) {
+                return $this->error('harga minimal rp 1.000', 400);
+            }
+
+            if ($stock < 0) {
+                return $this->error('stok tidak valid', 400);
+            }
+
+            // handle upload image jika ada
+            $imagePath = $product['main_image_path'];
             if (isset($_FILES['main_image']) && $_FILES['main_image']['error'] === UPLOAD_ERR_OK) {
-                $imagePath = $this->handleImageUpload($_FILES['main_image']);
-                $updateData['main_image_path'] = $imagePath;
+                $newImagePath = $this->handleImageUpload($_FILES['main_image']);
                 
-                // hapus image lama jika ada
-                if (!empty($product['main_image_path']) && file_exists($this->uploadDir . basename($product['main_image_path']))) {
-                    @unlink($this->uploadDir . basename($product['main_image_path']));
+                if ($newImagePath) {
+                    // hapus image lama jika ada
+                    if ($imagePath && file_exists($this->uploadDir . $imagePath)) {
+                        unlink($this->uploadDir . $imagePath);
+                    }
+                    $imagePath = $newImagePath;
                 }
             }
 
             // update produk
-            if (!empty($updateData)) {
-                $updated = $this->productModel->update($productId, $updateData);
-                
-                if (!$updated) {
-                    return $this->error('Gagal Mengupdate Produk', 500);
-                }
+            $productData = [
+                'product_name' => $productName,
+                'description' => $description,
+                'price' => $price,
+                'stock' => $stock,
+                'main_image_path' => $imagePath
+            ];
+
+            $updatedProduct = $this->productModel->update($productId, $productData);
+
+            if (!$updatedProduct) {
+                return $this->error('gagal memperbarui produk', 500);
             }
 
-            // update kategori jika ada
-            if (isset($_POST['category_ids']) && is_array($_POST['category_ids'])) {
-                // hapus semua kategori lama
-                $this->productModel->removeAllCategories($productId);
-                
-                // tambah kategori baru
-                foreach ($_POST['category_ids'] as $categoryId) {
+            // update kategori - hapus semua lalu insert ulang
+            $this->productModel->removeAllCategories($productId);
+            
+            if (!empty($categoryIds) && is_array($categoryIds)) {
+                foreach ($categoryIds as $categoryId) {
                     $this->productModel->addCategory($productId, $categoryId);
                 }
             }
 
-            return $this->success('Produk Berhasil Diupdate');
+            return $this->success('produk berhasil diperbarui', $updatedProduct);
 
         } catch (Exception $e) {
-            return $this->error('Terjadi Kesalahan: ' . $e->getMessage(), 500);
+            error_log('error di productcontroller::update - ' . $e->getMessage());
+            return $this->error('terjadi kesalahan: ' . $e->getMessage(), 500);
         }
     }
 
-    // API untuk delete produk
+    // api untuk delete produk
     public function delete() {
         try {
             // ambil user id dari session
             $userId = $_SESSION['user_id'] ?? null;
             
             if (!$userId) {
-                return $this->error('Unauthorized', 401);
+                return $this->error('unauthorized', 401);
             }
             
-            // ambil product id dari body (DELETE request)
-            $input = json_decode(file_get_contents('php://input'), true);
-            $productId = $input['product_id'] ?? $_POST['product_id'] ?? null;
+            // ambil product id dari body
+            $requestBody = file_get_contents('php://input');
+            $data = json_decode($requestBody, true);
+            $productId = $data['product_id'] ?? null;
             
             if (!$productId) {
-                return $this->error('Product ID Tidak Valid', 400);
+                return $this->error('product id tidak ditemukan', 400);
             }
             
             // ambil data produk
             $product = $this->productModel->find($productId);
             
             if (!$product) {
-                return $this->error('Produk Tidak Ditemukan', 404);
+                return $this->error('produk tidak ditemukan', 404);
             }
             
-            // validasi bahwa produk milik seller ini
+            // ambil store_id seller
             $store = $this->storeModel->findByUserId($userId);
             
-            if (!$store || $product['store_id'] != $store['store_id']) {
-                return $this->error('Unauthorized', 403);
+            if (!$store) {
+                return $this->error('toko tidak ditemukan', 404);
             }
-
-            // soft delete produk
-            $deleted = $this->productModel->delete($productId);
             
-            if (!$deleted) {
-                return $this->error('Gagal Menghapus Produk', 500);
+            // pastikan produk milik seller ini
+            if ($product['store_id'] != $store['store_id']) {
+                return $this->error('anda tidak memiliki akses ke produk ini', 403);
             }
 
-            return $this->success('Produk Berhasil Dihapus');
+            // hapus produk (cascade akan menghapus category_items)
+            $deleted = $this->productModel->delete($productId);
+
+            if (!$deleted) {
+                return $this->error('gagal menghapus produk', 500);
+            }
+
+            // hapus image file jika ada
+            if ($product['main_image_path'] && file_exists($this->uploadDir . $product['main_image_path'])) {
+                unlink($this->uploadDir . $product['main_image_path']);
+            }
+
+            return $this->success('produk berhasil dihapus');
 
         } catch (Exception $e) {
-            return $this->error('Terjadi Kesalahan: ' . $e->getMessage(), 500);
+            error_log('error di productcontroller::delete - ' . $e->getMessage());
+            return $this->error('terjadi kesalahan: ' . $e->getMessage(), 500);
         }
     }
 
-    // helper function untuk handle upload image
+    // helper function untuk upload image
     private function handleImageUpload($file) {
-        // validasi file
-        $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-        $maxSize = 2 * 1024 * 1024; // 2MB
+        try {
+            // validasi file
+            $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+            $maxSize = 2 * 1024 * 1024; // 2mb
 
-        if (!in_array($file['type'], $allowedTypes)) {
-            throw new Exception('Format File Tidak Didukung. Gunakan JPG, PNG, atau GIF');
+            if (!in_array($file['type'], $allowedTypes)) {
+                throw new Exception('format gambar tidak valid');
+            }
+
+            if ($file['size'] > $maxSize) {
+                throw new Exception('ukuran gambar terlalu besar');
+            }
+
+            // generate unique filename
+            $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+            $filename = 'product_' . time() . '_' . uniqid() . '.' . $extension;
+            $filepath = $this->uploadDir . $filename;
+
+            // pindahkan file
+            if (move_uploaded_file($file['tmp_name'], $filepath)) {
+                return $filename;
+            }
+
+            throw new Exception('gagal memindahkan file');
+
+        } catch (Exception $e) {
+            error_log('error upload image: ' . $e->getMessage());
+            return null;
         }
-
-        if ($file['size'] > $maxSize) {
-            throw new Exception('Ukuran File Terlalu Besar. Maksimal 2MB');
-        }
-
-        // generate nama file unik
-        $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-        $filename = 'product_' . uniqid() . '.' . $extension;
-        $targetPath = $this->uploadDir . $filename;
-
-        // upload file
-        if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
-            throw new Exception('Gagal Mengupload File');
-        }
-
-        // return relative path
-        return '/uploads/products/' . $filename;
     }
 }

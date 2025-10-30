@@ -19,10 +19,31 @@ class AuthMiddleware
         $this->rateLimitService = $rateLimitService;
     }
 
+    // helper: cek apakah request adalah ajax
+    private function isAjaxRequest() {
+        return !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+               strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+    }
+
+    // helper: return json error
+    private function jsonError($message, $code = 400) {
+        http_response_code($code);
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => false,
+            'message' => $message
+        ]);
+        exit();
+    }
+
     // cek apakah user sudah login
     public function handleAuth($next) {
         if (!$this->authService->isLoggedIn()) {
-            $this->authService->setFlashMessage('error', 'Silakan Login Terlebih Dahulu');
+            if ($this->isAjaxRequest()) {
+                $this->jsonError('silakan login terlebih dahulu', 401);
+            }
+            
+            $this->authService->setFlashMessage('error', 'silakan login terlebih dahulu');
             header("Location: /login");
             exit();
         }
@@ -49,13 +70,21 @@ class AuthMiddleware
     // cek apakah user adalah seller
     public function handleSeller($next) {
         if (!$this->authService->isLoggedIn()) {
-            $this->authService->setFlashMessage('error', 'Silakan Login Sebagai Seller');
+            if ($this->isAjaxRequest()) {
+                $this->jsonError('silakan login sebagai seller', 401);
+            }
+            
+            $this->authService->setFlashMessage('error', 'silakan login sebagai seller');
             header("Location: /login");
             exit();
         }
 
         if (!$this->authService->isSeller()) {
-            $this->authService->setFlashMessage('error', 'Akses Ditolak. Anda Bukan Seller.');
+            if ($this->isAjaxRequest()) {
+                $this->jsonError('akses ditolak. anda bukan seller', 403);
+            }
+            
+            $this->authService->setFlashMessage('error', 'akses ditolak. anda bukan seller');
             header("Location: /");
             exit();
         }
@@ -66,13 +95,21 @@ class AuthMiddleware
     // cek apakah user adalah buyer
     public function handleBuyer($next) {
         if (!$this->authService->isLoggedIn()) {
-            $this->authService->setFlashMessage('error', 'Silakan Login Terlebih Dahulu');
+            if ($this->isAjaxRequest()) {
+                $this->jsonError('silakan login terlebih dahulu', 401);
+            }
+            
+            $this->authService->setFlashMessage('error', 'silakan login terlebih dahulu');
             header("Location: /login");
             exit();
         }
 
         if (!$this->authService->isBuyer()) {
-            $this->authService->setFlashMessage('error', 'Akses Ditolak. Anda Bukan Buyer.');
+            if ($this->isAjaxRequest()) {
+                $this->jsonError('akses ditolak. anda bukan buyer', 403);
+            }
+            
+            $this->authService->setFlashMessage('error', 'akses ditolak. anda bukan buyer');
             header("Location: /seller/dashboard");
             exit();
         }
@@ -80,19 +117,36 @@ class AuthMiddleware
         return $next();
     }
 
-    // verifikasi token CSRF
+    // verifikasi token csrf
     public function handleCSRF($next) {
         $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
         
         if (in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'])) {
-            $token = $_POST['_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+            // ambil token dari berbagai sumber
+            $token = $_POST['csrf_token'] ?? 
+                     $_POST['_token'] ?? 
+                     $_SERVER['HTTP_X_CSRF_TOKEN'] ?? 
+                     '';
+
+            // debug log
+            error_log('csrf validation - method: ' . $method);
+            error_log('csrf token received: ' . substr($token, 0, 20) . '...');
+            error_log('csrf token from session: ' . substr($_SESSION['csrf_token'] ?? '', 0, 20) . '...');
 
             if (!$this->csrfService->verify($token)) {
-                $this->authService->setFlashMessage('error', 'Token Keamanan Tidak Valid. Silakan Coba Lagi.');
+                error_log('csrf validation failed!');
+                
+                if ($this->isAjaxRequest()) {
+                    $this->jsonError('token keamanan tidak valid', 403);
+                }
+                
+                $this->authService->setFlashMessage('error', 'token keamanan tidak valid. silakan coba lagi');
                 $referer = $_SERVER['HTTP_REFERER'] ?? '/';
                 header("Location: " . $referer);
                 exit();
             }
+            
+            error_log('csrf validation success!');
         }
 
         return $next();
@@ -102,7 +156,11 @@ class AuthMiddleware
     public function handleRateLimit($action = 'default', $maxAttempts = 5, $timeWindow = 300) {
         return function($next) use ($action, $maxAttempts, $timeWindow) {
             if (!$this->rateLimitService->check($action, $maxAttempts, $timeWindow)) {
-                $this->authService->setFlashMessage('error', 'Terlalu Banyak Percobaan. Silakan Coba Lagi Nanti.');
+                if ($this->isAjaxRequest()) {
+                    $this->jsonError('terlalu banyak percobaan. silakan coba lagi nanti', 429);
+                }
+                
+                $this->authService->setFlashMessage('error', 'terlalu banyak percobaan. silakan coba lagi nanti');
                 $referer = $_SERVER['HTTP_REFERER'] ?? '/';
                 header("Location: " . $referer);
                 exit();
@@ -117,7 +175,7 @@ class AuthMiddleware
         // prevent clickjacking
         header('X-Frame-Options: DENY');
         
-        // prevent MIME type sniffing
+        // prevent mime type sniffing
         header('X-Content-Type-Options: nosniff');
         
         // xss protection

@@ -30,6 +30,19 @@ class AuthController extends Controller
         $this->storeModel = $storeModel;
     }
     
+    // api untuk mendapatkan csrf token
+    public function getCsrfToken() {
+        try {
+            $token = $this->csrfService->getToken();
+            
+            return $this->success('csrf token berhasil diambil', [
+                'token' => $token
+            ]);
+        } catch (Exception $e) {
+            return $this->error('gagal mengambil csrf token: ' . $e->getMessage(), 500);
+        }
+    }
+    
     // menampilkan halaman form login
     public function loginForm() {
         $errorMessage = $this->authService->getFlashMessage('error');
@@ -63,7 +76,7 @@ class AuthController extends Controller
 
             // verifikasi password
             if (!$user || !$this->userModel->verifyPassword($loginData['password'], $user['password'])) {
-                throw new Exception('Invalid email or password.');
+                throw new Exception('email atau password salah');
             }
             
             // set session
@@ -88,7 +101,7 @@ class AuthController extends Controller
             $this->redirect('/login');
         } catch (Exception $e) {
             // write log error
-            $this->logger->logError('Login failed', [
+            $this->logger->logError('login failed', [
                 'email' => $_POST['email'] ?? 'unknown',
                 'error' => $e->getMessage(),
                 'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown'
@@ -125,41 +138,47 @@ class AuthController extends Controller
                 'password' => $_POST['password'] ?? '',
                 'address' => $_POST['address'] ?? '',
                 'password_confirm' => $_POST['password_confirm'] ?? '',
-                'role' => $_POST['role'] ?? 'BUYER'
+                'role' => $_POST['role'] ?? 'BUYER',
+                'store_name' => $_POST['store_name'] ?? ''
             ];
-            
+
             // validasi input
-            $this->validator->validateRegistration($userData);
+            $this->validator->validateRegister($userData);
 
             // buat user baru
-            $newUser = $this->userModel->createUser($userData);
-            
+            $newUser = $this->userModel->createUser([
+                'name' => $userData['name'],
+                'email' => $userData['email'],
+                'password' => $userData['password'],
+                'address' => $userData['address'],
+                'role' => $userData['role']
+            ]);
+
             if (!$newUser) {
-                throw new Exception('Registration failed due to an unknown error.');
+                throw new Exception('gagal membuat akun');
             }
 
-            // jika user adalah seller, auto-create toko
-            if ($userData['role'] === 'SELLER' && $this->storeModel) {
-                try {
-                    $storeData = [
-                        'user_id' => $newUser['user_id'],
-                        'store_name' => $userData['name'] . "'s Store",
-                        'store_description' => 'Welcome to my store!',
-                        'store_logo_path' => null,
-                        'balance' => 0
-                    ];
-                    
-                    $this->storeModel->create($storeData);
-                } catch (Exception $e) {
-                    // log error tapi tetap lanjut registrasi
-                    $this->logger->logError('Auto-create store failed', [
-                        'user_id' => $newUser['user_id'],
-                        'error' => $e->getMessage()
-                    ]);
-                }
+            // jika seller, buat toko juga
+            if ($userData['role'] === 'SELLER' && !empty($userData['store_name']) && $this->storeModel) {
+                $storeData = [
+                    'user_id' => $newUser['user_id'],
+                    'store_name' => $userData['store_name'],
+                    'store_description' => 'toko ' . $userData['store_name']
+                ];
+                
+                $this->storeModel->createStore($storeData);
             }
 
-            $this->authService->setFlashMessage('success', 'Registration successful! Please login.');
+            // set success message
+            $this->authService->setFlashMessage('success', 'registrasi berhasil! silakan login.');
+            
+            // write log
+            $this->logger->logInfo('user registered', [
+                'user_id' => $newUser['user_id'],
+                'email' => $newUser['email'],
+                'role' => $newUser['role']
+            ]);
+
             $this->redirect('/login');
 
         } catch (ValidationException $e) {
@@ -169,20 +188,25 @@ class AuthController extends Controller
             $this->redirect('/register');
         } catch (Exception $e) {
             // write log error
-            $this->logger->logError('Registration failed', [
+            $this->logger->logError('registration failed', [
                 'email' => $_POST['email'] ?? 'unknown',
-                'name' => $_POST['name'] ?? 'unknown',
-                'error' => $e->getMessage(),
-                'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown'
+                'error' => $e->getMessage()
             ]);
-            $this->authService->setFlashMessage('error', 'Registration failed. Please try again.');
+            $this->authService->setFlashMessage('error', $e->getMessage());
             $this->redirect('/register');
         }
     }
 
-    // menampilkan halaman dashboard
+    // proses logout
+    public function logout() {
+        $this->authService->logout();
+        $this->redirect('/login');
+    }
+
+    // redirect ke dashboard berdasarkan role
     public function dashboard() {
         $user = $this->authService->getCurrentUser();
+        
         if ($user['role'] === 'SELLER') {
             $this->redirect('/seller/dashboard');
         } else {
@@ -190,39 +214,19 @@ class AuthController extends Controller
         }
     }
 
-    // menampilkan profile
+    // halaman profile user
     public function profile() {
         $user = $this->authService->getCurrentUser();
-        $this->view('auth/profile', [
-            'user' => $user,
-            '_token' => $this->csrfService->getToken()
+        
+        $this->view('profile/index', [
+            'user' => $user
         ]);
-    }
-
-    // logout user
-    public function logout() {
-        $this->authService->logoutUser();
-        $this->authService->setFlashMessage('success', 'You have been logged out.');
-        $this->redirect('/login');
     }
 
     // clear session untuk debugging
     // TODO: hapus di production
     public function clearSession() {
         session_destroy();
-        session_start();
-        session_regenerate_id(true);
-        
-        echo "<h1>Session Cleared!</h1>";
-        echo "<p>All session data has been cleared.</p>";
-        echo "<p><a href='/login'>Go to Login</a> | <a href='/register'>Go to Register</a></p>";
-        echo "<hr>";
-        echo "<h3>Debug Info:</h3>";
-        echo "<pre>";
-        echo "Session ID: " . session_id() . "\n";
-        echo "Session Status: " . session_status() . "\n";
-        echo "Session Data:\n";
-        print_r($_SESSION);
-        echo "</pre>";
+        echo 'session cleared';
     }
 }

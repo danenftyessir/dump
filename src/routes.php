@@ -3,14 +3,21 @@
 // =================================================================
 // ROUTES UNTUK SELLER & PUBLIC (BAGIAN DANEN)
 // =================================================================
-// File ini berisi routes untuk:
+// file ini berisi routes untuk:
 // - Seller Dashboard & Management
 // - Product Discovery (Home/Public)
 // - Store Management
 // 
-// Auth routes (login, register, logout) ada di route/web.php
+// auth routes (login, register, logout) ada di route/web.php
 // =================================================================
 // file ini di require setelah web.php
+
+// ============================================
+// PUBLIC API ROUTES
+// ============================================
+
+// api untuk mendapatkan csrf token
+$router->get('/api/csrf-token', 'AuthController@getCsrfToken');
 
 // ============================================
 // SELLER ROUTES (khusus seller yang sudah login)
@@ -24,7 +31,7 @@ $router->get('/seller/dashboard', 'StoreController@dashboard')
 $router->get('/seller/products', 'ProductController@index')
        ->middleware(['auth', 'seller']);
 
-// API untuk mendapatkan produk seller dengan filter
+// api untuk mendapatkan produk seller dengan filter
 $router->get('/api/seller/products', 'ProductController@getSellerProducts')
        ->middleware(['auth', 'seller']);
 
@@ -32,7 +39,7 @@ $router->get('/api/seller/products', 'ProductController@getSellerProducts')
 $router->get('/seller/products/add', 'ProductController@create')
        ->middleware(['auth', 'seller']);
 
-// API untuk menyimpan produk baru
+// api untuk menyimpan produk baru
 $router->post('/api/seller/products', 'ProductController@store')
        ->middleware(['auth', 'seller', 'csrf']);
 
@@ -40,64 +47,58 @@ $router->post('/api/seller/products', 'ProductController@store')
 $router->get('/seller/products/edit', 'ProductController@edit')
        ->middleware(['auth', 'seller']);
 
-// API untuk update produk
+// api untuk update produk
 $router->post('/api/seller/products/update', 'ProductController@update')
        ->middleware(['auth', 'seller', 'csrf']);
 
-// API untuk delete produk
+// api untuk delete produk
 $router->delete('/api/seller/products', 'ProductController@delete')
        ->middleware(['auth', 'seller', 'csrf']);
 
-// API untuk membuat toko (saat registrasi seller pertama kali)
+// api untuk membuat toko (saat registrasi seller pertama kali)
 $router->post('/api/stores', 'StoreController@create')
        ->middleware(['auth', 'seller', 'csrf']);
 
-// API untuk update informasi toko seller
+// api untuk update informasi toko seller
 $router->patch('/api/my-store', 'StoreController@update')
        ->middleware(['auth', 'seller', 'csrf']);
 
-// API untuk mendapatkan data toko seller
+// api untuk mendapatkan data toko seller
 $router->get('/api/my-store', 'StoreController@getMyStore')
        ->middleware(['auth', 'seller']);
 
-// API untuk statistik dashboard seller
+// api untuk statistik dashboard seller
 $router->get('/api/seller/store/stats', 'StoreController@getStats')
        ->middleware(['auth', 'seller']);
 
 // halaman kelola pesanan seller
 $router->get('/seller/orders', 'SellerOrderController@index')
        ->middleware(['auth', 'seller']);
- 
-// API untuk mendapatkan detail pesanan
+
+// api untuk mendapatkan pesanan seller dengan filter
+$router->get('/api/seller/orders', 'SellerOrderController@getSellerOrders')
+       ->middleware(['auth', 'seller']);
+
+// api untuk mendapatkan detail pesanan
 $router->get('/api/seller/orders/detail', 'SellerOrderController@getOrderDetail')
        ->middleware(['auth', 'seller']);
 
-// API untuk update status pesanan
+// api untuk update status pesanan
 $router->post('/api/seller/orders/update-status', 'SellerOrderController@updateOrderStatus')
        ->middleware(['auth', 'seller', 'csrf']);
 
 // ============================================
-// PUBLIC ROUTES (dapat diakses semua user)
+// PUBLIC ROUTES (dapat diakses siapa saja)
 // ============================================
 
-// halaman utama - product discovery
+// halaman home / product discovery
 $router->get('/', 'ProductDiscoveryController@index');
-$router->get('/home', 'ProductDiscoveryController@index');
 
-// halaman detail produk
-$router->get('/product/{id}', 'ProductDiscoveryController@showProduct');
-
-// halaman detail toko
-$router->get('/store/{id}', 'StoreController@show');
-
-// API untuk mendapatkan produk dengan filter, search, pagination
+// api untuk mendapatkan produk untuk discovery
 $router->get('/api/products', 'ProductDiscoveryController@getProducts');
 
-// API untuk detail produk
-$router->get('/api/products/{id}', 'ProductDiscoveryController@showProduct');
+// halaman detail produk
+$router->get('/product', 'ProductDiscoveryController@detail');
 
-// API untuk search suggestions - BONUS
-$router->get('/api/search-suggestions', 'ProductDiscoveryController@getSearchSuggestions');
-
-// API untuk detail toko
-$router->get('/api/stores/{id}', 'StoreController@show');
+// halaman detail store / toko
+$router->get('/store', 'ProductDiscoveryController@storeDetail');

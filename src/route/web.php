@@ -46,6 +46,9 @@ $router->get('/dashboard', 'AuthController@dashboard')
 $router->get('/profile', 'AuthController@profile')
        ->middleware('auth');
 
+// API untuk mendapatkan CSRF token
+$router->get('/api/csrf-token', 'AuthController@getCsrfToken');
+
 // clear session untuk debugging
 // TODO: hapus di production
 $router->get('/clear-session', 'AuthController@clearSession');
