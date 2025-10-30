@@ -33,7 +33,6 @@ class ProductController extends Controller
         // ambil user id dari session
         // NOTE: session structure adalah flat: $_SESSION['user_id']
         $userId = $_SESSION['user_id'] ?? null;
-        $userName = $_SESSION['user_name'] ?? 'User';
         
         if (!$userId) {
             return $this->redirect('/login');
@@ -42,27 +41,8 @@ class ProductController extends Controller
         // ambil data toko seller
         $store = $this->storeModel->findByUserId($userId);
         
-        // FALLBACK LOGIC: jika seller belum punya toko, auto-create
         if (!$store) {
-            try {
-                // buat toko otomatis menggunakan nama dari session
-                $storeData = [
-                    'user_id' => $userId,
-                    'store_name' => $userName . "'s Store",
-                    'store_description' => 'Selamat Datang Di Toko Saya!',
-                    'store_logo_path' => null,
-                    'balance' => 0
-                ];
-                
-                $store = $this->storeModel->create($storeData);
-                
-                if (!$store) {
-                    return $this->error('Gagal Membuat Toko. Silakan Hubungi Administrator.', 500);
-                }
-                
-            } catch (Exception $e) {
-                return $this->error('Terjadi Kesalahan: ' . $e->getMessage(), 500);
-            }
+            return $this->error('Toko Tidak Ditemukan', 404);
         }
         
         // ambil semua kategori untuk filter
@@ -79,7 +59,6 @@ class ProductController extends Controller
         try {
             // ambil user id dari session
             $userId = $_SESSION['user_id'] ?? null;
-            $userName = $_SESSION['user_name'] ?? 'User';
             
             if (!$userId) {
                 return $this->error('Unauthorized', 401);
@@ -88,27 +67,8 @@ class ProductController extends Controller
             // ambil store_id seller
             $store = $this->storeModel->findByUserId($userId);
             
-            // FALLBACK LOGIC: auto-create toko jika belum ada
             if (!$store) {
-                try {
-                    // buat toko otomatis menggunakan nama dari session
-                    $storeData = [
-                        'user_id' => $userId,
-                        'store_name' => $userName . "'s Store",
-                        'store_description' => 'Selamat Datang Di Toko Saya!',
-                        'store_logo_path' => null,
-                        'balance' => 0
-                    ];
-                    
-                    $store = $this->storeModel->create($storeData);
-                    
-                    if (!$store) {
-                        return $this->error('Gagal Membuat Toko', 500);
-                    }
-                    
-                } catch (Exception $e) {
-                    return $this->error('Terjadi Kesalahan: ' . $e->getMessage(), 500);
-                }
+                return $this->error('Toko Tidak Ditemukan', 404);
             }
             
             // ambil filter dari query string
@@ -134,7 +94,6 @@ class ProductController extends Controller
     public function create() {
         // ambil user id dari session
         $userId = $_SESSION['user_id'] ?? null;
-        $userName = $_SESSION['user_name'] ?? 'User';
         
         if (!$userId) {
             return $this->redirect('/login');
@@ -143,27 +102,8 @@ class ProductController extends Controller
         // ambil data toko seller
         $store = $this->storeModel->findByUserId($userId);
         
-        // FALLBACK LOGIC: auto-create toko jika belum ada
         if (!$store) {
-            try {
-                // buat toko otomatis menggunakan nama dari session
-                $storeData = [
-                    'user_id' => $userId,
-                    'store_name' => $userName . "'s Store",
-                    'store_description' => 'Selamat Datang Di Toko Saya!',
-                    'store_logo_path' => null,
-                    'balance' => 0
-                ];
-                
-                $store = $this->storeModel->create($storeData);
-                
-                if (!$store) {
-                    return $this->error('Gagal Membuat Toko', 500);
-                }
-                
-            } catch (Exception $e) {
-                return $this->error('Terjadi Kesalahan: ' . $e->getMessage(), 500);
-            }
+            return $this->error('Toko Tidak Ditemukan', 404);
         }
         
         // ambil semua kategori
@@ -180,7 +120,6 @@ class ProductController extends Controller
         try {
             // ambil user id dari session
             $userId = $_SESSION['user_id'] ?? null;
-            $userName = $_SESSION['user_name'] ?? 'User';
             
             if (!$userId) {
                 return $this->error('Unauthorized', 401);
@@ -189,27 +128,8 @@ class ProductController extends Controller
             // ambil store_id seller
             $store = $this->storeModel->findByUserId($userId);
             
-            // FALLBACK LOGIC: auto-create toko jika belum ada
             if (!$store) {
-                try {
-                    // buat toko otomatis menggunakan nama dari session
-                    $storeData = [
-                        'user_id' => $userId,
-                        'store_name' => $userName . "'s Store",
-                        'store_description' => 'Selamat Datang Di Toko Saya!',
-                        'store_logo_path' => null,
-                        'balance' => 0
-                    ];
-                    
-                    $store = $this->storeModel->create($storeData);
-                    
-                    if (!$store) {
-                        return $this->error('Gagal Membuat Toko', 500);
-                    }
-                    
-                } catch (Exception $e) {
-                    return $this->error('Terjadi Kesalahan: ' . $e->getMessage(), 500);
-                }
+                return $this->error('Toko Tidak Ditemukan', 404);
             }
 
             // ambil data input
@@ -219,20 +139,20 @@ class ProductController extends Controller
             $stock = $_POST['stock'] ?? 0;
             $categoryIds = $_POST['category_ids'] ?? [];
 
-            // validasi input
+            // validasi
             if (empty($productName)) {
                 return $this->error('Nama Produk Wajib Diisi', 400);
             }
 
-            if ($price <= 0) {
-                return $this->error('Harga Harus Lebih Dari 0', 400);
+            if ($price < 0) {
+                return $this->error('Harga Tidak Valid', 400);
             }
 
             if ($stock < 0) {
-                return $this->error('Stok Tidak Boleh Negatif', 400);
+                return $this->error('Stok Tidak Valid', 400);
             }
 
-            // handle upload image
+            // handle upload image jika ada
             $imagePath = null;
             if (isset($_FILES['main_image']) && $_FILES['main_image']['error'] === UPLOAD_ERR_OK) {
                 $imagePath = $this->handleImageUpload($_FILES['main_image']);
@@ -243,8 +163,8 @@ class ProductController extends Controller
                 'store_id' => $store['store_id'],
                 'product_name' => $productName,
                 'description' => $description,
-                'price' => (int)$price,
-                'stock' => (int)$stock,
+                'price' => $price,
+                'stock' => $stock,
                 'main_image_path' => $imagePath
             ];
 
@@ -374,15 +294,17 @@ class ProductController extends Controller
             }
 
             // update produk
-            $result = $this->productModel->update($productId, $updateData);
-
-            if (!$result) {
-                return $this->error('Gagal Mengupdate Produk', 500);
+            if (!empty($updateData)) {
+                $updated = $this->productModel->update($productId, $updateData);
+                
+                if (!$updated) {
+                    return $this->error('Gagal Mengupdate Produk', 500);
+                }
             }
 
             // update kategori jika ada
             if (isset($_POST['category_ids']) && is_array($_POST['category_ids'])) {
-                // hapus kategori lama
+                // hapus semua kategori lama
                 $this->productModel->removeAllCategories($productId);
                 
                 // tambah kategori baru
@@ -391,7 +313,7 @@ class ProductController extends Controller
                 }
             }
 
-            return $this->success('Produk Berhasil Diupdate', $result);
+            return $this->success('Produk Berhasil Diupdate');
 
         } catch (Exception $e) {
             return $this->error('Terjadi Kesalahan: ' . $e->getMessage(), 500);
@@ -408,9 +330,9 @@ class ProductController extends Controller
                 return $this->error('Unauthorized', 401);
             }
             
-            // ambil product id dari body request
+            // ambil product id dari body (DELETE request)
             $input = json_decode(file_get_contents('php://input'), true);
-            $productId = $input['product_id'] ?? null;
+            $productId = $input['product_id'] ?? $_POST['product_id'] ?? null;
             
             if (!$productId) {
                 return $this->error('Product ID Tidak Valid', 400);
@@ -431,13 +353,13 @@ class ProductController extends Controller
             }
 
             // soft delete produk
-            $result = $this->productModel->softDelete($productId);
-
-            if (!$result) {
+            $deleted = $this->productModel->delete($productId);
+            
+            if (!$deleted) {
                 return $this->error('Gagal Menghapus Produk', 500);
             }
 
-            return $this->success('Produk Berhasil Dihapus', null);
+            return $this->success('Produk Berhasil Dihapus');
 
         } catch (Exception $e) {
             return $this->error('Terjadi Kesalahan: ' . $e->getMessage(), 500);
@@ -448,14 +370,14 @@ class ProductController extends Controller
     private function handleImageUpload($file) {
         // validasi file
         $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-        $maxSize = 5 * 1024 * 1024; // 5MB
+        $maxSize = 2 * 1024 * 1024; // 2MB
 
         if (!in_array($file['type'], $allowedTypes)) {
-            throw new Exception('Format File Tidak Didukung. Gunakan JPG, PNG, Atau GIF');
+            throw new Exception('Format File Tidak Didukung. Gunakan JPG, PNG, atau GIF');
         }
 
         if ($file['size'] > $maxSize) {
-            throw new Exception('Ukuran File Terlalu Besar. Maksimal 5MB');
+            throw new Exception('Ukuran File Terlalu Besar. Maksimal 2MB');
         }
 
         // generate nama file unik
