@@ -110,7 +110,7 @@ $container->set('Controller\StoreController', function($c) {
     );
 });
 
-// product controller
+// product controller - NO NEED User model (ambil nama dari session)
 $container->set('Controller\ProductController', function($c) {
     return new Controller\ProductController(
         $c->get('Product'),
@@ -128,7 +128,7 @@ $container->set('Controller\ProductDiscoveryController', function($c) {
     );
 });
 
-// seller order controller
+// seller order controller - NO NEED User model (ambil nama dari session)
 $container->set('Controller\SellerOrderController', function($c) {
     return new Controller\SellerOrderController(
         $c->get('Order'),
@@ -137,41 +137,14 @@ $container->set('Controller\SellerOrderController', function($c) {
     );
 });
 
-// alias untuk backward compatibility
-$container->set('SellerOrderController', function($c) {
-    return $c->get('Controller\SellerOrderController');
-});
-
 // ============================================
-// BINDING ROUTER
+// BUAT ROUTER DAN JALANKAN APLIKASI
 // ============================================
-$container->set('Router', function($c) {
-    return Core\Router::getInstance($c);
-});
+$router = new Core\Router($container);
 
-// dapatkan router instance
-$router = $container->get('Router');
-
-// ============================================
-// LOAD ROUTE DEFINITIONS
-// ============================================
-
-// cek apakah web.php ada (auth routes)
-$webRoutePath = __DIR__ . '/../../route/web.php';
-if (file_exists($webRoutePath)) {
-    require_once $webRoutePath;
-} else {
-    // fallback jika struktur berbeda
-    $webRoutePath = __DIR__ . '/../route/web.php';
-    if (file_exists($webRoutePath)) {
-        require_once $webRoutePath;
-    }
-}
-
-// load seller & public routes
+// load route definitions
+require_once __DIR__ . '/../route/web.php';
 require_once __DIR__ . '/../routes.php';
 
-// ============================================
-// DISPATCH ROUTER
-// ============================================
-$router->dispatch();
+// jalankan router
+$router->run();

@@ -6,12 +6,13 @@ use Base\Controller;
 use Model\Order;
 use Model\Store;
 use Service\AuthService;
+use Exception;
 
 class SellerOrderController extends Controller
 {
-    private Order $orderModel;
-    private Store $storeModel;
-    private AuthService $authService;
+    private $orderModel;
+    private $storeModel;
+    private $authService;
 
     public function __construct(Order $orderModel, Store $storeModel, AuthService $authService)
     {
@@ -30,11 +31,32 @@ class SellerOrderController extends Controller
             exit;
         }
 
-        // ambil store seller menggunakan findByUserId (bukan getStoreByUserId)
+        // ambil store seller menggunakan findByUserId
         $store = $this->storeModel->findByUserId($user['user_id']);
+        
+        // FALLBACK LOGIC: auto-create toko jika belum ada
         if (!$store) {
-            header('Location: /seller/dashboard');
-            exit;
+            try {
+                // buat toko otomatis menggunakan nama dari session
+                $storeData = [
+                    'user_id' => $user['user_id'],
+                    'store_name' => $user['name'] . "'s Store",
+                    'store_description' => 'Selamat Datang Di Toko Saya!',
+                    'store_logo_path' => null,
+                    'balance' => 0
+                ];
+                
+                $store = $this->storeModel->create($storeData);
+                
+                if (!$store) {
+                    header('Location: /seller/dashboard');
+                    exit;
+                }
+                
+            } catch (Exception $e) {
+                header('Location: /seller/dashboard');
+                exit;
+            }
         }
 
         // ambil parameter filter dan pagination
@@ -85,22 +107,43 @@ class SellerOrderController extends Controller
         // ambil order_id dari query string
         $orderId = $_GET['order_id'] ?? null;
         if (!$orderId) {
-            echo json_encode(['success' => false, 'message' => 'Order ID required']);
+            echo json_encode(['success' => false, 'message' => 'Order ID Required']);
             exit;
         }
 
         // ambil store seller
         $store = $this->storeModel->findByUserId($user['user_id']);
+        
+        // FALLBACK LOGIC: auto-create toko jika belum ada
         if (!$store) {
-            echo json_encode(['success' => false, 'message' => 'Store not found']);
-            exit;
+            try {
+                // buat toko otomatis menggunakan nama dari session
+                $storeData = [
+                    'user_id' => $user['user_id'],
+                    'store_name' => $user['name'] . "'s Store",
+                    'store_description' => 'Selamat Datang Di Toko Saya!',
+                    'store_logo_path' => null,
+                    'balance' => 0
+                ];
+                
+                $store = $this->storeModel->create($storeData);
+                
+                if (!$store) {
+                    echo json_encode(['success' => false, 'message' => 'Failed To Create Store']);
+                    exit;
+                }
+                
+            } catch (Exception $e) {
+                echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+                exit;
+            }
         }
 
         // ambil detail pesanan dengan items
         $orderDetail = $this->orderModel->getOrderDetailWithItems($orderId, $store['store_id']);
         
         if (!$orderDetail) {
-            echo json_encode(['success' => false, 'message' => 'Order not found or unauthorized']);
+            echo json_encode(['success' => false, 'message' => 'Order Not Found Or Unauthorized']);
             exit;
         }
 
@@ -127,21 +170,42 @@ class SellerOrderController extends Controller
         $rejectReason = $input['reject_reason'] ?? null;
 
         if (!$orderId || !$newStatus) {
-            echo json_encode(['success' => false, 'message' => 'Order ID and status required']);
+            echo json_encode(['success' => false, 'message' => 'Order ID And Status Required']);
             exit;
         }
 
         // ambil store seller
         $store = $this->storeModel->findByUserId($user['user_id']);
+        
+        // FALLBACK LOGIC: auto-create toko jika belum ada
         if (!$store) {
-            echo json_encode(['success' => false, 'message' => 'Store not found']);
-            exit;
+            try {
+                // buat toko otomatis menggunakan nama dari session
+                $storeData = [
+                    'user_id' => $user['user_id'],
+                    'store_name' => $user['name'] . "'s Store",
+                    'store_description' => 'Selamat Datang Di Toko Saya!',
+                    'store_logo_path' => null,
+                    'balance' => 0
+                ];
+                
+                $store = $this->storeModel->create($storeData);
+                
+                if (!$store) {
+                    echo json_encode(['success' => false, 'message' => 'Failed To Create Store']);
+                    exit;
+                }
+                
+            } catch (Exception $e) {
+                echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+                exit;
+            }
         }
 
         // validasi bahwa pesanan milik toko ini
         $order = $this->orderModel->getOrderById($orderId);
         if (!$order || $order['store_id'] !== $store['store_id']) {
-            echo json_encode(['success' => false, 'message' => 'Order not found or unauthorized']);
+            echo json_encode(['success' => false, 'message' => 'Order Not Found Or Unauthorized']);
             exit;
         }
 
@@ -155,28 +219,38 @@ class SellerOrderController extends Controller
         ];
 
         if (!in_array($newStatus, $validTransitions[$order['status']] ?? [])) {
-            echo json_encode(['success' => false, 'message' => 'Invalid status transition']);
+            echo json_encode(['success' => false, 'message' => 'Invalid Status Transition']);
             exit;
         }
 
         // update status
         try {
             $updateData = ['status' => $newStatus];
-
-            if ($newStatus === 'approved' && $deliveryTime) {
-                $updateData['delivery_time'] = $deliveryTime;
-                $updateData['confirmed_at'] = date('Y-m-d H:i:s');
-            } elseif ($newStatus === 'rejected' && $rejectReason) {
-                $updateData['reject_reason'] = $rejectReason;
-            }
-
-            $this->orderModel->updateOrderStatus($orderId, $updateData);
-
-            // TODO: kirim notifikasi ke buyer (email atau in-app notification)
             
-            echo json_encode(['success' => true, 'message' => 'Status pesanan berhasil diperbarui']);
-        } catch (\Exception $e) {
-            echo json_encode(['success' => false, 'message' => 'Gagal memperbarui status: ' . $e->getMessage()]);
+            if ($newStatus === 'approved') {
+                $updateData['confirmed_at'] = date('Y-m-d H:i:s');
+                
+                if ($deliveryTime) {
+                    $updateData['delivery_time'] = $deliveryTime;
+                }
+            } elseif ($newStatus === 'rejected') {
+                $updateData['reject_reason'] = $rejectReason;
+                
+                // refund balance ke buyer
+                $this->orderModel->refundOrder($orderId);
+            } elseif ($newStatus === 'on_delivery') {
+                // tidak ada field tambahan untuk on_delivery
+            }
+            
+            $result = $this->orderModel->updateOrderStatus($orderId, $updateData);
+            
+            if ($result) {
+                echo json_encode(['success' => true, 'message' => 'Status Berhasil Diupdate']);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Gagal Update Status']);
+            }
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         }
     }
 }

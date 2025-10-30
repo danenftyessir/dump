@@ -34,6 +34,7 @@ class StoreController extends Controller
             // ambil user id dari session
             // NOTE: session structure adalah flat: $_SESSION['user_id'], bukan $_SESSION['user']['user_id']
             $currentUserId = $_SESSION['user_id'] ?? null;
+            $currentUserName = $_SESSION['user_name'] ?? 'User';
             
             if (!$currentUserId) {
                 return $this->redirect('/login');
@@ -42,10 +43,27 @@ class StoreController extends Controller
             // ambil data toko
             $store = $this->storeModel->findByUserId($currentUserId);
             
+            // FALLBACK LOGIC: jika seller belum punya toko, auto-create
             if (!$store) {
-                // seller belum punya toko, redirect ke halaman buat toko
-                // TODO: buat halaman untuk create store pertama kali
-                return $this->error('Toko Tidak Ditemukan. Silakan Buat Toko Terlebih Dahulu.', 404);
+                try {
+                    // buat toko otomatis menggunakan nama dari session
+                    $storeData = [
+                        'user_id' => $currentUserId,
+                        'store_name' => $currentUserName . "'s Store",
+                        'store_description' => 'Selamat Datang Di Toko Saya!',
+                        'store_logo_path' => null,
+                        'balance' => 0
+                    ];
+                    
+                    $store = $this->storeModel->create($storeData);
+                    
+                    if (!$store) {
+                        return $this->error('Gagal Membuat Toko. Silakan Hubungi Administrator.', 500);
+                    }
+                    
+                } catch (Exception $e) {
+                    return $this->error('Terjadi Kesalahan: ' . $e->getMessage(), 500);
+                }
             }
 
             // ambil statistik
@@ -79,6 +97,7 @@ class StoreController extends Controller
     public function getMyStore() {
         try {
             $currentUserId = $_SESSION['user_id'] ?? null;
+            $currentUserName = $_SESSION['user_name'] ?? 'User';
             
             if (!$currentUserId) {
                 return $this->error('Unauthorized', 401);
@@ -86,8 +105,27 @@ class StoreController extends Controller
 
             $store = $this->storeModel->findByUserId($currentUserId);
             
+            // FALLBACK LOGIC: auto-create toko jika belum ada
             if (!$store) {
-                return $this->error('Toko Tidak Ditemukan', 404);
+                try {
+                    // buat toko otomatis menggunakan nama dari session
+                    $storeData = [
+                        'user_id' => $currentUserId,
+                        'store_name' => $currentUserName . "'s Store",
+                        'store_description' => 'Selamat Datang Di Toko Saya!',
+                        'store_logo_path' => null,
+                        'balance' => 0
+                    ];
+                    
+                    $store = $this->storeModel->create($storeData);
+                    
+                    if (!$store) {
+                        return $this->error('Gagal Membuat Toko', 500);
+                    }
+                    
+                } catch (Exception $e) {
+                    return $this->error('Terjadi Kesalahan: ' . $e->getMessage(), 500);
+                }
             }
 
             return $this->success('Data Toko Berhasil Diambil', $store);
@@ -157,14 +195,13 @@ class StoreController extends Controller
                 return $this->error('Unauthorized', 401);
             }
 
-            // ambil data toko
             $store = $this->storeModel->findByUserId($currentUserId);
             
             if (!$store) {
                 return $this->error('Toko Tidak Ditemukan', 404);
             }
 
-            // ambil data input
+            // ambil data update
             $updateData = [];
             
             if (isset($_POST['store_name'])) {
@@ -186,43 +223,14 @@ class StoreController extends Controller
                 }
             }
 
-            if (empty($updateData)) {
-                return $this->error('Tidak Ada Data yang Diubah', 400);
-            }
-
             // update toko
-            $updated = $this->storeModel->update($store['store_id'], $updateData);
+            $result = $this->storeModel->update($store['store_id'], $updateData);
 
-            if (!$updated) {
+            if (!$result) {
                 return $this->error('Gagal Mengupdate Toko', 500);
             }
 
-            return $this->success('Toko Berhasil Diupdate');
-
-        } catch (Exception $e) {
-            return $this->error('Terjadi Kesalahan: ' . $e->getMessage(), 500);
-        }
-    }
-
-    // halaman detail toko untuk public
-    public function show() {
-        try {
-            $storeId = $_GET['id'] ?? null;
-            
-            if (!$storeId) {
-                return $this->error('Store ID Tidak Valid', 400);
-            }
-
-            $store = $this->storeModel->find($storeId);
-            
-            if (!$store) {
-                return $this->error('Toko Tidak Ditemukan', 404);
-            }
-
-            // render view detail toko
-            return $this->view('store/detail', [
-                'store' => $store
-            ]);
+            return $this->success('Toko Berhasil Diupdate', $result);
 
         } catch (Exception $e) {
             return $this->error('Terjadi Kesalahan: ' . $e->getMessage(), 500);
@@ -233,6 +241,7 @@ class StoreController extends Controller
     public function getStats() {
         try {
             $currentUserId = $_SESSION['user_id'] ?? null;
+            $currentUserName = $_SESSION['user_name'] ?? 'User';
             
             if (!$currentUserId) {
                 return $this->error('Unauthorized', 401);
@@ -240,8 +249,27 @@ class StoreController extends Controller
 
             $store = $this->storeModel->findByUserId($currentUserId);
             
+            // FALLBACK LOGIC: auto-create toko jika belum ada
             if (!$store) {
-                return $this->error('Toko Tidak Ditemukan', 404);
+                try {
+                    // buat toko otomatis menggunakan nama dari session
+                    $storeData = [
+                        'user_id' => $currentUserId,
+                        'store_name' => $currentUserName . "'s Store",
+                        'store_description' => 'Selamat Datang Di Toko Saya!',
+                        'store_logo_path' => null,
+                        'balance' => 0
+                    ];
+                    
+                    $store = $this->storeModel->create($storeData);
+                    
+                    if (!$store) {
+                        return $this->error('Gagal Membuat Toko', 500);
+                    }
+                    
+                } catch (Exception $e) {
+                    return $this->error('Terjadi Kesalahan: ' . $e->getMessage(), 500);
+                }
             }
 
             $storeId = $store['store_id'];
@@ -260,6 +288,33 @@ class StoreController extends Controller
         }
     }
 
+    // halaman detail toko untuk public
+    public function show() {
+        try {
+            // ambil store id dari URL parameter
+            $storeId = $_GET['id'] ?? null;
+            
+            if (!$storeId) {
+                return $this->error('Store ID Tidak Valid', 400);
+            }
+            
+            // ambil data toko
+            $store = $this->storeModel->getStoreWithOwner($storeId);
+            
+            if (!$store) {
+                return $this->error('Toko Tidak Ditemukan', 404);
+            }
+            
+            // render view
+            return $this->view('store/detail', [
+                'store' => $store
+            ]);
+            
+        } catch (Exception $e) {
+            return $this->error('Terjadi Kesalahan: ' . $e->getMessage(), 500);
+        }
+    }
+
     // helper function untuk handle upload logo
     private function handleLogoUpload($file) {
         // validasi file
@@ -267,7 +322,7 @@ class StoreController extends Controller
         $maxSize = 2 * 1024 * 1024; // 2MB
 
         if (!in_array($file['type'], $allowedTypes)) {
-            throw new Exception('Format File Tidak Didukung. Gunakan JPG, PNG, atau GIF');
+            throw new Exception('Format File Tidak Didukung. Gunakan JPG, PNG, Atau GIF');
         }
 
         if ($file['size'] > $maxSize) {
