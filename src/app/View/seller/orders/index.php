@@ -107,7 +107,6 @@ $stats = $stats ?? [
                         <div class="empty-illustration">
                             <img src="/asset/empty-orders-placeholder.jpg" alt="Tidak Ada Pesanan">
                         </div>
-                        <h3 class="empty-title">Belum Ada Pesanan</h3>
                         <p class="empty-desc">
                             <?php if ($currentStatus === 'all'): ?>
                                 Belum ada pesanan yang masuk ke toko Anda. Pastikan produk Anda menarik dan aktif!
