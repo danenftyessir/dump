@@ -391,4 +391,165 @@ class Order extends Model
         
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    /**
+     * mendapatkan daftar pesanan berdasarkan store_id dengan filter status dan pagination
+     */
+    public function getOrdersBySeller($storeId, $status = 'all', $limit = 10, $offset = 0)
+    {
+        $query = "
+            SELECT 
+                o.order_id,
+                o.buyer_id,
+                o.total_price,
+                o.shipping_address,
+                o.status,
+                o.created_at,
+                o.confirmed_at,
+                o.delivery_time,
+                o.received_at,
+                u.name as buyer_name,
+                u.email as buyer_email
+            FROM orders o
+            INNER JOIN users u ON o.buyer_id = u.user_id
+            WHERE o.store_id = :store_id
+        ";
+
+        $params = ['store_id' => $storeId];
+
+        // tambahkan filter status jika bukan 'all'
+        if ($status !== 'all') {
+            $query .= " AND o.status = :status";
+            $params['status'] = $status;
+        }
+
+        $query .= " ORDER BY o.created_at DESC LIMIT :limit OFFSET :offset";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':store_id', $storeId, \PDO::PARAM_INT);
+        if ($status !== 'all') {
+            $stmt->bindValue(':status', $status, \PDO::PARAM_STR);
+        }
+        $stmt->bindValue(':limit', $limit, \PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, \PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * menghitung total pesanan berdasarkan store_id dengan filter status
+     */
+    public function countOrdersBySeller($storeId, $status = 'all')
+    {
+        $query = "SELECT COUNT(*) FROM orders WHERE store_id = :store_id";
+        $params = ['store_id' => $storeId];
+
+        if ($status !== 'all') {
+            $query .= " AND status = :status";
+            $params['status'] = $status;
+        }
+
+        $stmt = $this->db->prepare($query);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue(':' . $key, $value);
+        }
+        $stmt->execute();
+
+        return (int) $stmt->fetchColumn();
+    }
+
+    /**
+     * menghitung jumlah pesanan berdasarkan status tertentu
+     */
+    public function countOrdersByStatus($storeId, $status)
+    {
+        $stmt = $this->db->prepare("
+            SELECT COUNT(*) 
+            FROM orders 
+            WHERE store_id = :store_id AND status = :status
+        ");
+        $stmt->execute([
+            'store_id' => $storeId,
+            'status' => $status
+        ]);
+
+        return (int) $stmt->fetchColumn();
+    }
+
+    /**
+     * mendapatkan detail pesanan dengan items
+     */
+    public function getOrderDetailWithItems($orderId, $storeId)
+    {
+        // ambil data order
+        $stmt = $this->db->prepare("
+            SELECT 
+                o.*,
+                u.name as buyer_name,
+                u.email as buyer_email,
+                u.address as buyer_address
+            FROM orders o
+            INNER JOIN users u ON o.buyer_id = u.user_id
+            WHERE o.order_id = :order_id AND o.store_id = :store_id
+        ");
+        $stmt->execute([
+            'order_id' => $orderId,
+            'store_id' => $storeId
+        ]);
+
+        $order = $stmt->fetch(\PDO::FETCH_ASSOC);
+        if (!$order) {
+            return null;
+        }
+
+        // ambil items dalam order
+        $stmt = $this->db->prepare("
+            SELECT 
+                oi.order_item_id,
+                oi.product_id,
+                oi.quantity,
+                oi.price_at_order,
+                oi.subtotal,
+                p.product_name,
+                p.main_image_path
+            FROM order_items oi
+            INNER JOIN products p ON oi.product_id = p.product_id
+            WHERE oi.order_id = :order_id
+        ");
+        $stmt->execute(['order_id' => $orderId]);
+
+        $order['items'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+        return $order;
+    }
+
+    /**
+     * mendapatkan pesanan berdasarkan ID
+     */
+    public function getOrderById($orderId)
+    {
+        $stmt = $this->db->prepare("SELECT * FROM orders WHERE order_id = :order_id");
+        $stmt->execute(['order_id' => $orderId]);
+        return $stmt->fetch(\PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * update status pesanan
+     */
+    public function updateOrderStatus($orderId, $updateData)
+    {
+        $setClause = [];
+        $params = ['order_id' => $orderId];
+
+        foreach ($updateData as $key => $value) {
+            $setClause[] = "$key = :$key";
+            $params[$key] = $value;
+        }
+
+        $query = "UPDATE orders SET " . implode(', ', $setClause) . " WHERE order_id = :order_id";
+        
+        $stmt = $this->db->prepare($query);
+        return $stmt->execute($params);
+    }
 }

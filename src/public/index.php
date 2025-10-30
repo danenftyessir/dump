@@ -128,6 +128,20 @@ $container->set('Controller\ProductDiscoveryController', function($c) {
     );
 });
 
+// seller order controller
+$container->set('Controller\SellerOrderController', function($c) {
+    return new Controller\SellerOrderController(
+        $c->get('Order'),
+        $c->get('Store'),
+        $c->get('AuthService')
+    );
+});
+
+// alias untuk backward compatibility
+$container->set('SellerOrderController', function($c) {
+    return $c->get('Controller\SellerOrderController');
+});
+
 // ============================================
 // BINDING ROUTER
 // ============================================

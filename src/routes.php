@@ -64,6 +64,18 @@ $router->get('/api/my-store', 'StoreController@getMyStore')
 $router->get('/api/seller/store/stats', 'StoreController@getStats')
        ->middleware(['auth', 'seller']);
 
+// halaman kelola pesanan seller
+$router->get('/seller/orders', 'SellerOrderController@index')
+       ->middleware(['auth', 'seller']);
+ 
+// API untuk mendapatkan detail pesanan
+$router->get('/api/seller/orders/detail', 'SellerOrderController@getOrderDetail')
+       ->middleware(['auth', 'seller']);
+
+// API untuk update status pesanan
+$router->post('/api/seller/orders/update-status', 'SellerOrderController@updateOrderStatus')
+       ->middleware(['auth', 'seller', 'csrf']);
+
 // ============================================
 // PUBLIC ROUTES (dapat diakses semua user)
 // ============================================
