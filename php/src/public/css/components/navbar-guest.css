@@ -1,0 +1,44 @@
+.btn-login,
+.btn-register {
+    padding: 10px 24px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.btn-login {
+    color: #2c3e50;
+    background: transparent;
+    border: 2px solid #e1e8ed;
+}
+
+.btn-login:hover {
+    border-color: #3d9970;
+    color: #3d9970;
+    transform: translateY(-2px);
+}
+
+.btn-register {
+    color: #2c3e50;
+    background: linear-gradient(135deg, #f4b840 0%, #e0a530 100%);
+    border: 2px solid transparent;
+}
+
+.btn-register:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(244, 184, 64, 0.3);
+}
+
+@media (max-width: 768px) {
+    .navbar-links {
+        display: none;
+    }
+    .btn-login,
+    .btn-register {
+        padding: 8px 20px;
+        font-size: 0.875rem;
+    }
+}
