@@ -106,6 +106,18 @@ $router->get('/seller/dashboard', 'Controller\StoreController@dashboard')
 $router->post('/api/seller/store/update', 'Controller\StoreController@update')
        ->middleware(['auth', 'seller', 'csrf']);
 
+// Export Products to CSV (must be before /seller/products)
+$router->get('/seller/products/export', 'Controller\ProductController@export')
+       ->middleware(['auth', 'seller']);
+
+// Seller Add Product Page (must be before /seller/products)
+$router->get('/seller/products/add', 'Controller\ProductController@create')
+       ->middleware(['auth', 'seller']);
+
+// Seller Edit Product Page (must be before /seller/products)
+$router->get('/seller/products/edit/{id}', 'Controller\ProductController@edit')
+       ->middleware(['auth', 'seller']);
+
 // Seller Product Management Page
 $router->get('/seller/products', 'Controller\ProductController@index')
        ->middleware(['auth', 'seller']);
@@ -114,17 +126,9 @@ $router->get('/seller/products', 'Controller\ProductController@index')
 $router->get('/api/seller/products', 'Controller\ProductController@getProducts')
        ->middleware(['auth', 'seller']);
 
-// Seller Add Product Page
-$router->get('/seller/products/add', 'Controller\ProductController@create')
-       ->middleware(['auth', 'seller']);
-
 // API for Store New Product
 $router->post('/api/seller/products', 'Controller\ProductController@store')
        ->middleware(['auth', 'seller', 'csrf']);
-
-// Seller Edit Product Page
-$router->get('/seller/products/edit/{id}', 'Controller\ProductController@edit')
-       ->middleware(['auth', 'seller']);
 
 // API for Update Product
 $router->post('/api/seller/products/update/{id}', 'Controller\ProductController@update')
@@ -133,6 +137,10 @@ $router->post('/api/seller/products/update/{id}', 'Controller\ProductController@
 // API for Delete Product
 $router->post('/api/seller/products/delete/{id}', 'Controller\ProductController@delete')
        ->middleware(['auth', 'seller', 'csrf']);
+
+// Export Orders to CSV (must be before /seller/orders)
+$router->get('/seller/orders/export', 'Controller\SellerOrderController@export')
+       ->middleware(['auth', 'seller']);
 
 // Seller Order Management Page
 $router->get('/seller/orders', 'Controller\SellerOrderController@index')

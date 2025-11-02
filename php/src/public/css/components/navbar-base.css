@@ -160,6 +160,15 @@
     .navbar-brand h1 {
         font-size: 1.5rem;
     }
+    .navbar-brand-text {
+        font-size: 1.25rem;
+    }
+
+    /* Ensure user dropdown is visible on mobile */
+    .user-dropdown {
+        position: fixed;
+        right: 16px;
+    }
 }
 
 *:focus-visible {

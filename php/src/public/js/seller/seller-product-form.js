@@ -1,5 +1,5 @@
 // =================================================================
-// SELLER PRODUCT FORM - JAVASCRIPT (WITH DEBUG)
+// SELLER PRODUCT FORM - JAVASCRIPT
 // file ini menangani form tambah produk seller
 // =================================================================
 
@@ -43,6 +43,9 @@ function initQuillEditor() {
         }
     });
 
+    // Tambahkan aria-labels untuk accessibility
+    addQuillAccessibilityLabels();
+
     // update hidden input saat konten berubah
     quill.on('text-change', function() {
         const html = quill.root.innerHTML;
@@ -52,6 +55,36 @@ function initQuillEditor() {
         }
         updateDescCharCount();
     });
+}
+
+// Menambahkan aria-labels untuk Quill toolbar buttons
+function addQuillAccessibilityLabels() {
+    // Tunggu DOM update setelah Quill diinisialisasi
+    setTimeout(() => {
+        const toolbar = document.querySelector('.ql-toolbar');
+        if (!toolbar) return;
+
+        // Bold button
+        const boldBtn = toolbar.querySelector('.ql-bold');
+        if (boldBtn) boldBtn.setAttribute('aria-label', 'Tebal (Bold)');
+
+        // Italic button
+        const italicBtn = toolbar.querySelector('.ql-italic');
+        if (italicBtn) italicBtn.setAttribute('aria-label', 'Miring (Italic)');
+
+        // Underline button
+        const underlineBtn = toolbar.querySelector('.ql-underline');
+        if (underlineBtn) underlineBtn.setAttribute('aria-label', 'Garis Bawah (Underline)');
+
+        // List buttons
+        const listBtns = toolbar.querySelectorAll('.ql-list');
+        if (listBtns[0]) listBtns[0].setAttribute('aria-label', 'Daftar Bernomor (Ordered List)');
+        if (listBtns[1]) listBtns[1].setAttribute('aria-label', 'Daftar Bullet (Bullet List)');
+
+        // Clean formatting button
+        const cleanBtn = toolbar.querySelector('.ql-clean');
+        if (cleanBtn) cleanBtn.setAttribute('aria-label', 'Hapus Format (Clear Formatting)');
+    }, 100);
 }
 
 // =================================================================
@@ -183,30 +216,53 @@ async function handleFormSubmit(e) {
         // debug: log request
         console.log('sending request to /api/seller/products');
 
-        // kirim data via ajax
-        const response = await fetch('/api/seller/products', {
-            method: 'POST',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: formData
+        // Gunakan XMLHttpRequest untuk progress tracking
+        const data = await new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+
+            // Progress bar element
+            const progressContainer = createProgressBar();
+
+            // Track upload progress
+            xhr.upload.addEventListener('progress', (e) => {
+                if (e.lengthComputable) {
+                    const percentComplete = Math.round((e.loaded / e.total) * 100);
+                    updateProgressBar(progressContainer, percentComplete);
+                }
+            });
+
+            xhr.addEventListener('load', () => {
+                removeProgressBar(progressContainer);
+
+                console.log('response status:', xhr.status);
+                console.log('response headers:', xhr.getResponseHeader('content-type'));
+
+                const contentType = xhr.getResponseHeader('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    console.error('response bukan json:', xhr.responseText.substring(0, 500));
+                    reject(new Error('server mengembalikan response tidak valid. cek console untuk detail.'));
+                    return;
+                }
+
+                try {
+                    const responseData = JSON.parse(xhr.responseText);
+                    console.log('response data:', responseData);
+                    resolve(responseData);
+                } catch (e) {
+                    console.error('error parsing json:', e);
+                    reject(new Error('gagal memproses response dari server'));
+                }
+            });
+
+            xhr.addEventListener('error', () => {
+                removeProgressBar(progressContainer);
+                reject(new Error('gagal terhubung ke server'));
+            });
+
+            xhr.open('POST', '/api/seller/products', true);
+            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+            xhr.send(formData);
         });
-
-        // debug: log response
-        console.log('response status:', response.status);
-        console.log('response headers:', response.headers.get('content-type'));
-
-        // cek content type
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-            // response bukan json, kemungkinan error page atau redirect
-            const textResponse = await response.text();
-            console.error('response bukan json:', textResponse.substring(0, 500));
-            throw new Error('server mengembalikan response tidak valid. cek console untuk detail.');
-        }
-
-        const data = await response.json();
-        console.log('response data:', data);
 
         if (data.success) {
             showToast('Produk Berhasil Ditambahkan');
@@ -507,5 +563,71 @@ function showToast(message, type = 'success') {
                 toast.classList.add('hidden');
             }, 300);
         }, 3000);
+    }
+}
+
+// =================================================================
+// PROGRESS BAR HELPERS
+// =================================================================
+
+function createProgressBar() {
+    const progressContainer = document.createElement('div');
+    progressContainer.className = 'upload-progress-container';
+    progressContainer.innerHTML = `
+        <div class="upload-progress-wrapper">
+            <div class="upload-progress-info">
+                <span class="upload-progress-label">Mengupload...</span>
+                <span class="upload-progress-percent">0%</span>
+            </div>
+            <div class="upload-progress-bar">
+                <div class="upload-progress-fill" style="width: 0%"></div>
+            </div>
+        </div>
+    `;
+
+    // Insert before form (after page title)
+    const form = document.querySelector('form');
+    if (form && form.parentNode) {
+        form.parentNode.insertBefore(progressContainer, form);
+    }
+
+    return progressContainer;
+}
+
+function updateProgressBar(progressContainer, percent) {
+    if (!progressContainer) return;
+
+    const fill = progressContainer.querySelector('.upload-progress-fill');
+    const percentText = progressContainer.querySelector('.upload-progress-percent');
+
+    if (fill) {
+        fill.style.width = percent + '%';
+    }
+
+    if (percentText) {
+        percentText.textContent = percent + '%';
+    }
+
+    // Update label based on progress
+    const label = progressContainer.querySelector('.upload-progress-label');
+    if (label) {
+        if (percent >= 100) {
+            label.textContent = 'Memproses...';
+        } else if (percent >= 50) {
+            label.textContent = 'Mengupload... Hampir selesai';
+        }
+    }
+}
+
+function removeProgressBar(progressContainer) {
+    if (progressContainer && progressContainer.parentNode) {
+        progressContainer.style.opacity = '0';
+        progressContainer.style.transition = 'opacity 0.3s ease';
+
+        setTimeout(() => {
+            if (progressContainer.parentNode) {
+                progressContainer.parentNode.removeChild(progressContainer);
+            }
+        }, 300);
     }
 }

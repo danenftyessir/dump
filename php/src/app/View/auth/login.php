@@ -15,8 +15,7 @@ $emailInput = $oldInput['email'] ?? '';
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Login</title>
     <link rel="stylesheet" href="/css/auth/login.css">
-    <!-- Untuk sementara gini dulu dah icon, ntar diganti -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="/css/icons.css">
 </head>
 <body>
     <div class="login-container">
@@ -52,7 +51,7 @@ $emailInput = $oldInput['email'] ?? '';
                 <input type="hidden" name="_token" value="<?php echo htmlspecialchars($token); ?>">
 
                 <div class="input-group">
-                    <i class="fas fa-envelope icon"></i>
+                    <span class="icon icon-envelope"></span>
                     <input type="email" name="email" placeholder="Masukkan Email" required
                            value="<?php echo htmlspecialchars($emailInput); ?>">
                     <?php if (isset($errors['email'])): ?>
@@ -61,9 +60,9 @@ $emailInput = $oldInput['email'] ?? '';
                 </div>
                 
                 <div class="input-group password-group">
-                    <i class="fas fa-lock icon"></i>
+                    <span class="icon icon-lock"></span>
                     <input type="password" name="password" id="password" placeholder="Masukkan Password" required>
-                    <i class="fas fa-eye password-toggle" id="passwordToggleIcon" onclick="togglePassword()"></i>
+                    <span class="icon icon-eye password-toggle" id="passwordToggleIcon" onclick="togglePassword()"></span>
                     <?php if (isset($errors['password'])): ?>
                         <span class="error-message"><?php echo htmlspecialchars($errors['password']); ?></span>
                     <?php endif; ?>

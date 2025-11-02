@@ -40,11 +40,24 @@ class ProductValidator
         }
 
         if ($fileData && $fileData['error'] === UPLOAD_ERR_OK) {
-            // Tipe File
+            // Validasi MIME Type
             $allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
             $fileMimeType = mime_content_type($fileData['tmp_name']);
             if (!in_array($fileMimeType, $allowedTypes)) {
                 $errors['main_image'] = 'Format file tidak valid (JPG, PNG, WEBP).';
+            }
+
+            // Validasi Ekstensi File (double check untuk keamanan)
+            $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+            $fileExtension = strtolower(pathinfo($fileData['name'], PATHINFO_EXTENSION));
+            if (!in_array($fileExtension, $allowedExtensions)) {
+                $errors['main_image'] = 'Ekstensi file tidak valid. Gunakan JPG, PNG, atau WEBP.';
+            }
+
+            // Validasi ukuran file (max 2MB)
+            $maxSize = 2 * 1024 * 1024; // 2MB in bytes
+            if ($fileData['size'] > $maxSize) {
+                $errors['main_image'] = 'Ukuran file maksimal 2MB.';
             }
         } elseif (!$isUpdate && (empty($fileData) || $fileData['error'] !== UPLOAD_ERR_OK)) {
             $errors['main_image'] = 'Foto produk wajib diupload.';

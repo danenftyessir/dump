@@ -30,7 +30,7 @@ $imagePath = $product['main_image_path']
     <title><?php echo htmlspecialchars($product['product_name']); ?> - Nimonspedia</title>
     
     <link rel="stylesheet" href="/css/buyer/product-detail.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="/css/icons.css">
 </head>
 <body>
 
@@ -84,7 +84,7 @@ $imagePath = $product['main_image_path']
                             
                             <?php if ($isLoggedIn && $isBuyer): ?>
                                 <button type="submit" class="btn btn-primary btn-add-to-cart" id="submitBtn">
-                                    <i class="fas fa-shopping-cart"></i> Tambah ke Keranjang
+                                    <span class="icon icon-cart"></span> Tambah ke Keranjang
                                 </button>
                             <?php else: ?>
                                 <a href="/login" class="btn btn-primary">Login untuk Membeli</a>

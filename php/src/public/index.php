@@ -51,6 +51,14 @@ $container->set('FileService', function() {
     return new Service\FileService();
 });
 
+$container->set('AdvancedSearchService', function($c) {
+    return new Service\AdvancedSearchService($c->get('Database'));
+});
+
+$container->set('CSVExportService', function() {
+    return new Service\CSVExportService();
+});
+
 $container->set('CartService', function($c) {
     return new Service\CartService($c->get('CartItem'));
 });
@@ -202,7 +210,9 @@ $container->set('Controller\ProductController', function($c) {
         $c->get('CSRFService'),
         $c->get('LoggerService'),
         $c->get('FileService'),
-        $c->get('ProductValidator')
+        $c->get('ProductValidator'),
+        $c->get('AdvancedSearchService'),
+        $c->get('CSVExportService')
     );
 });
 
@@ -213,7 +223,8 @@ $container->set('Controller\SellerOrderController', function($c) {
         $c->get('AuthService'),
         $c->get('OrderService'),
         $c->get('CSRFService'),
-        $c->get('LoggerService')
+        $c->get('LoggerService'),
+        $c->get('CSVExportService')
     );
 });
 

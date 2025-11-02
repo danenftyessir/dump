@@ -48,10 +48,101 @@ function viewOrderDetail(orderId) {
     xhr.send();
 }
 
+// fungsi untuk generate status timeline
+function generateStatusTimeline(status, createdAt, confirmAt, deliveryTime, receivedAt, rejectReason) {
+    const statusLabels = {
+        'waiting_approval': 'Menunggu Konfirmasi',
+        'approved': 'Dikonfirmasi',
+        'on_delivery': 'Dalam Pengiriman',
+        'received': 'Selesai',
+        'rejected': 'Ditolak'
+    };
+
+    const formatDateTime = (dateStr) => {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('id-ID', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+
+    let timelineHTML = '';
+
+    // 1. Order Created (always present)
+    timelineHTML += `
+        <div class="timeline-item active">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+                <div class="timeline-title">Pesanan Dibuat</div>
+                <div class="timeline-date">${formatDateTime(createdAt)}</div>
+            </div>
+        </div>
+    `;
+
+    // 2. Handle different status paths
+    if (status === 'rejected') {
+        // Rejected path
+        timelineHTML += `
+            <div class="timeline-item active rejected">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content">
+                    <div class="timeline-title">Pesanan Ditolak</div>
+                    <div class="timeline-date">${rejectReason ? `Alasan: ${rejectReason}` : ''}</div>
+                </div>
+            </div>
+        `;
+    } else {
+        // Normal flow: waiting → approved → on_delivery → received
+
+        // 2. Approved
+        const isApproved = ['approved', 'on_delivery', 'received'].includes(status);
+        timelineHTML += `
+            <div class="timeline-item ${isApproved ? 'active' : ''}">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content">
+                    <div class="timeline-title">Pesanan Dikonfirmasi</div>
+                    <div class="timeline-date">${isApproved && confirmAt ? formatDateTime(confirmAt) : ''}</div>
+                    ${isApproved && deliveryTime ? `<div class="timeline-info">Est. Pengiriman: ${formatDateTime(deliveryTime)}</div>` : ''}
+                </div>
+            </div>
+        `;
+
+        // 3. On Delivery
+        const isOnDelivery = ['on_delivery', 'received'].includes(status);
+        timelineHTML += `
+            <div class="timeline-item ${isOnDelivery ? 'active' : ''}">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content">
+                    <div class="timeline-title">Dalam Pengiriman</div>
+                    <div class="timeline-date">${isOnDelivery ? 'Pesanan sedang dikirim' : ''}</div>
+                </div>
+            </div>
+        `;
+
+        // 4. Received
+        const isReceived = status === 'received';
+        timelineHTML += `
+            <div class="timeline-item ${isReceived ? 'active' : ''}">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content">
+                    <div class="timeline-title">Pesanan Diterima</div>
+                    <div class="timeline-date">${isReceived && receivedAt ? formatDateTime(receivedAt) : ''}</div>
+                </div>
+            </div>
+        `;
+    }
+
+    return timelineHTML;
+}
+
 // fungsi untuk render detail pesanan ke modal
 function renderOrderDetail(order) {
     const content = document.getElementById('orderDetailContent');
-    
+
     // format tanggal
     const orderDate = new Date(order.created_at);
     const formattedDate = orderDate.toLocaleDateString('id-ID', {
@@ -61,7 +152,7 @@ function renderOrderDetail(order) {
         hour: '2-digit',
         minute: '2-digit'
     });
-    
+
     // status labels
     const statusLabels = {
         'waiting_approval': 'Menunggu Konfirmasi',
@@ -122,7 +213,7 @@ function renderOrderDetail(order) {
             </div>
         `;
     }
-    
+
     // render delivery time jika approved
     let deliveryTimeHTML = '';
     if (order.delivery_time) {
@@ -139,7 +230,25 @@ function renderOrderDetail(order) {
             </div>
         `;
     }
-    
+
+    // Render Status History Timeline
+    const statusHistory = generateStatusTimeline(
+        order.status,
+        order.created_at,
+        order.confirmed_at,
+        order.delivery_time,
+        order.received_at,
+        order.reject_reason
+    );
+    const statusHistoryHTML = `
+        <div class="detail-section">
+            <h3 class="detail-section-title">Riwayat Status</h3>
+            <div class="status-timeline">
+                ${statusHistory}
+            </div>
+        </div>
+    `;
+
     content.innerHTML = `
         <div class="order-detail-grid">
             <div class="detail-section">
@@ -163,7 +272,7 @@ function renderOrderDetail(order) {
                 ${deliveryTimeHTML}
                 ${rejectReasonHTML}
             </div>
-            
+
             <div class="detail-section">
                 <h3 class="detail-section-title">Informasi Pembeli</h3>
                 <div class="detail-row">
@@ -183,6 +292,8 @@ function renderOrderDetail(order) {
             </div>
         </div>
 
+        ${statusHistoryHTML}
+
         <div class="detail-section">
             <h3 class="detail-section-title">Item Pesanan</h3>
             <div class="order-items-list">
@@ -195,7 +306,7 @@ function renderOrderDetail(order) {
                 </span>
             </div>
         </div>
-        
+
         ${actionsHTML ? `<div class="modal-actions">${actionsHTML}<button class="btn-action btn-secondary" onclick="closeOrderDetailModal()">Tutup</button></div>` : '<div class="modal-actions"><button class="btn-action btn-secondary" onclick="closeOrderDetailModal()">Tutup</button></div>'}
     `;
 }
@@ -205,11 +316,31 @@ function approveOrder(orderId) {
     if (!confirm('Apakah Anda yakin ingin menerima pesanan ini?')) {
         return;
     }
-    
+
     // tampilkan form untuk input delivery time
     const content = document.getElementById('orderDetailContent');
     const originalContent = content.innerHTML;
-    
+
+    // calculate quick-select dates
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const minDate = tomorrow.toISOString().split('T')[0];
+
+    const threeDays = new Date();
+    threeDays.setDate(threeDays.getDate() + 3);
+    const threeDaysDate = threeDays.toISOString().split('T')[0];
+    const threeDaysFormatted = threeDays.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+
+    const fiveDays = new Date();
+    fiveDays.setDate(fiveDays.getDate() + 5);
+    const fiveDaysDate = fiveDays.toISOString().split('T')[0];
+    const fiveDaysFormatted = fiveDays.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+
+    const sevenDays = new Date();
+    sevenDays.setDate(sevenDays.getDate() + 7);
+    const sevenDaysDate = sevenDays.toISOString().split('T')[0];
+    const sevenDaysFormatted = sevenDays.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+
     content.innerHTML = `
         <div class="detail-section">
             <h3 class="detail-section-title">Terima Pesanan</h3>
@@ -217,13 +348,29 @@ function approveOrder(orderId) {
 
             <div class="input-group">
                 <label class="input-label" for="deliveryTime">Estimasi Waktu Pengiriman</label>
-                <input type="date" id="deliveryTime" class="input-field"
-                       min="${new Date().toISOString().split('T')[0]}" required>
+                <input type="date" id="deliveryTime" class="input-field date-picker-input"
+                       min="${minDate}" required>
                 <small class="text-secondary mt-1 visible">
                     Pilih tanggal perkiraan barang sampai ke pembeli
                 </small>
             </div>
-            
+
+            <!-- Quick Select Buttons -->
+            <div class="quick-select-container">
+                <span class="quick-select-label">Pilih Cepat:</span>
+                <div class="quick-select-buttons">
+                    <button type="button" class="btn-quick-select" data-date="${threeDaysDate}">
+                        3 Hari<br><small>${threeDaysFormatted}</small>
+                    </button>
+                    <button type="button" class="btn-quick-select" data-date="${fiveDaysDate}">
+                        5 Hari<br><small>${fiveDaysFormatted}</small>
+                    </button>
+                    <button type="button" class="btn-quick-select" data-date="${sevenDaysDate}">
+                        7 Hari<br><small>${sevenDaysFormatted}</small>
+                    </button>
+                </div>
+            </div>
+
             <div class="modal-actions">
                 <button class="btn-action btn-approve" onclick="submitApproveOrder(${orderId})">
                     Konfirmasi
@@ -234,12 +381,28 @@ function approveOrder(orderId) {
             </div>
         </div>
     `;
-    
-    // set minimum date to tomorrow
+
+    // add event listeners for quick select buttons
+    const quickSelectBtns = document.querySelectorAll('.btn-quick-select');
     const deliveryInput = document.getElementById('deliveryTime');
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    deliveryInput.min = tomorrow.toISOString().split('T')[0];
+
+    quickSelectBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const selectedDate = this.getAttribute('data-date');
+            deliveryInput.value = selectedDate;
+
+            // remove active class from all buttons
+            quickSelectBtns.forEach(b => b.classList.remove('active'));
+
+            // add active class to clicked button
+            this.classList.add('active');
+        });
+    });
+
+    // remove active class when manual date is selected
+    deliveryInput.addEventListener('change', function() {
+        quickSelectBtns.forEach(b => b.classList.remove('active'));
+    });
 }
 
 // fungsi untuk submit approve order (AJAX)
@@ -465,6 +628,68 @@ document.addEventListener('DOMContentLoaded', function() {
         top: 0,
         behavior: 'smooth'
     });
+
+    // SEARCH FUNCTIONALITY
+    const searchInput = document.getElementById('searchInput');
+    const btnClearSearch = document.getElementById('btnClearSearch');
+    let searchTimeout;
+
+    if (searchInput) {
+        // Debounced search (500ms delay)
+        searchInput.addEventListener('input', function(e) {
+            const searchValue = e.target.value.trim();
+
+            // Show/hide clear button
+            if (searchValue) {
+                btnClearSearch.style.display = 'block';
+            } else {
+                btnClearSearch.style.display = 'none';
+            }
+
+            // Clear previous timeout
+            clearTimeout(searchTimeout);
+
+            // Set new timeout
+            searchTimeout = setTimeout(function() {
+                performSearch(searchValue);
+            }, 500);
+        });
+
+        // Clear search button
+        if (btnClearSearch) {
+            btnClearSearch.addEventListener('click', function() {
+                searchInput.value = '';
+                btnClearSearch.style.display = 'none';
+                performSearch('');
+            });
+        }
+
+        // Enter key to search immediately
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                clearTimeout(searchTimeout);
+                performSearch(searchInput.value.trim());
+            }
+        });
+    }
+
+    function performSearch(searchQuery) {
+        // Get current URL params
+        const urlParams = new URLSearchParams(window.location.search);
+
+        // Update search param
+        if (searchQuery) {
+            urlParams.set('search', searchQuery);
+        } else {
+            urlParams.delete('search');
+        }
+
+        // Reset to page 1 when searching
+        urlParams.set('page', '1');
+
+        // Redirect to new URL
+        window.location.href = `${window.location.pathname}?${urlParams.toString()}`;
+    }
 });
 
 // TODO: implementasi real-time notification untuk pesanan baru

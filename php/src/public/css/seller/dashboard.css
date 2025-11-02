@@ -727,3 +727,109 @@
     transform: translateZ(0);
     backface-visibility: hidden;
 }
+
+/* ============================================
+   ✅ PROGRESS BAR UPLOAD STYLES
+   (AC: Spesifikasi hal 31 - Loading state & progress bar)
+   ============================================ */
+.upload-progress-container {
+    margin-bottom: 24px;
+    padding: 20px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border: 2px solid #e8eaed;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    transition: opacity 0.3s ease;
+}
+
+.upload-progress-wrapper {
+    width: 100%;
+}
+
+.upload-progress-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.upload-progress-label {
+    font-weight: 600;
+    font-size: 0.9375rem;
+    color: #31353b;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.upload-progress-label::before {
+    content: '';
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: #42b549;
+    border-radius: 50%;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.5;
+        transform: scale(1.3);
+    }
+}
+
+.upload-progress-percent {
+    font-weight: 700;
+    font-size: 1rem;
+    color: #42b549;
+    font-variant-numeric: tabular-nums;
+}
+
+.upload-progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #e8eaed;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+}
+
+.upload-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #42b549 0%, #38a03f 100%);
+    border-radius: 10px;
+    transition: width 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Animated shimmer effect */
+.upload-progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.3),
+        transparent
+    );
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        left: -100%;
+    }
+    100% {
+        left: 100%;
+    }
+}

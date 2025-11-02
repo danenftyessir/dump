@@ -211,6 +211,65 @@ body {
     background: #f5fff6;
 }
 
+/* search section */
+.search-section {
+    background: white;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.15s backwards;
+}
+
+.search-container {
+    position: relative;
+    max-width: 600px;
+}
+
+.search-input {
+    width: 100%;
+    padding: 12px 40px 12px 16px;
+    font-size: 15px;
+    border: 2px solid #e8eaed;
+    border-radius: 8px;
+    outline: none;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.search-input:focus {
+    border-color: #03ac0e;
+    box-shadow: 0 0 0 3px rgba(3, 172, 14, 0.1);
+}
+
+.search-input::placeholder {
+    color: #9ca3af;
+}
+
+.btn-clear-search {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: #f3f4f6;
+    color: #6b7280;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: all 0.2s ease;
+}
+
+.btn-clear-search:hover {
+    background: #e5e7eb;
+    color: #374151;
+}
+
 /* orders list section */
 .orders-list-section {
     background: white;
@@ -705,15 +764,30 @@ body {
     box-shadow: 0 4px 12px rgba(0, 86, 179, 0.3);
 }
 
+/* ✅ Button Export CSV - sama persis dengan products page */
 .btn-secondary {
-    background: #f5f7fa;
-    color: #6d7588;
-    border: 1px solid #e8eaed;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: var(--color-white);
+    color: var(--color-text-primary);
+    border: 2px solid var(--color-border);
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s var(--transition-smooth);
 }
 
 .btn-secondary:hover {
-    background: #e8eaed;
-    color: #31353b;
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.btn-secondary svg {
+    flex-shrink: 0;
 }
 
 /* input untuk delivery time dan reject reason */
@@ -888,6 +962,292 @@ textarea.input-field {
 
     .btn-action {
         width: 100%;
+    }
+}
+
+/* =====================================================
+   DATE PICKER QUICK SELECT STYLES
+   ===================================================== */
+
+.date-picker-input {
+    font-size: 1rem;
+    padding: 12px 16px;
+    transition: all 0.2s ease;
+}
+
+.date-picker-input:focus {
+    border-color: #42b549;
+    box-shadow: 0 0 0 3px rgba(66, 181, 73, 0.1);
+    outline: none;
+}
+
+.quick-select-container {
+    margin: 20px 0;
+    padding: 16px;
+    background: #f9fafb;
+    border-radius: 8px;
+    border: 1px solid #e8eaed;
+}
+
+.quick-select-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #6d7588;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.quick-select-buttons {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.btn-quick-select {
+    flex: 1;
+    min-width: 100px;
+    padding: 12px 16px;
+    background: white;
+    border: 2px solid #e8eaed;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #31353b;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    line-height: 1.4;
+}
+
+.btn-quick-select small {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: #6d7588;
+    margin-top: 4px;
+}
+
+.btn-quick-select:hover {
+    border-color: #42b549;
+    background: #f0f9f1;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-quick-select.active {
+    border-color: #42b549;
+    background: #42b549;
+    color: white;
+    box-shadow: 0 4px 12px rgba(66, 181, 73, 0.3);
+}
+
+.btn-quick-select.active small {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+@media (max-width: 640px) {
+    .quick-select-buttons {
+        flex-direction: column;
+    }
+
+    .btn-quick-select {
+        width: 100%;
+        min-width: unset;
+    }
+}
+
+/* =====================================================
+   STATUS TIMELINE STYLES
+   ===================================================== */
+
+.status-timeline {
+    position: relative;
+    padding: 24px 0;
+    margin: 16px 0;
+}
+
+/* vertical line connecting timeline items */
+.status-timeline::before {
+    content: '';
+    position: absolute;
+    left: 12px;
+    top: 40px;
+    bottom: 40px;
+    width: 2px;
+    background: #e8eaed;
+    z-index: 0;
+}
+
+.timeline-item {
+    position: relative;
+    padding: 12px 0 12px 48px;
+    margin-bottom: 24px;
+    opacity: 0.5;
+    transition: all 0.3s ease;
+}
+
+.timeline-item:last-child {
+    margin-bottom: 0;
+}
+
+/* active/completed timeline items */
+.timeline-item.active {
+    opacity: 1;
+}
+
+/* timeline dot indicator */
+.timeline-dot {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 3px solid #e8eaed;
+    background: white;
+    z-index: 1;
+    transition: all 0.3s ease;
+}
+
+/* active dot styling */
+.timeline-item.active .timeline-dot {
+    border-color: #42b549;
+    background: #42b549;
+    box-shadow: 0 0 0 4px rgba(66, 181, 73, 0.1);
+}
+
+/* inner dot for active items */
+.timeline-item.active .timeline-dot::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: white;
+}
+
+/* rejected status styling */
+.timeline-item.rejected .timeline-dot {
+    border-color: #ef4444;
+    background: #ef4444;
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
+}
+
+.timeline-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.timeline-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #31353b;
+    line-height: 1.4;
+}
+
+.timeline-date {
+    font-size: 0.875rem;
+    color: #6d7588;
+    line-height: 1.4;
+}
+
+.timeline-info {
+    font-size: 0.875rem;
+    color: #42b549;
+    line-height: 1.4;
+    margin-top: 4px;
+}
+
+/* inactive timeline items */
+.timeline-item:not(.active) .timeline-title {
+    color: #9ca3af;
+}
+
+.timeline-item:not(.active) .timeline-date {
+    color: #d1d5db;
+}
+
+/* hover effect for all timeline items */
+.timeline-item {
+    cursor: default;
+}
+
+/* rejected item text color */
+.timeline-item.rejected .timeline-title {
+    color: #ef4444;
+}
+
+.timeline-item.rejected .timeline-date {
+    color: #f87171;
+}
+
+/* animation for timeline entrance */
+@keyframes timelineSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.timeline-item {
+    animation: timelineSlideIn 0.4s ease-out forwards;
+}
+
+.timeline-item:nth-child(1) {
+    animation-delay: 0.1s;
+}
+
+.timeline-item:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.timeline-item:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
+.timeline-item:nth-child(4) {
+    animation-delay: 0.4s;
+}
+
+/* responsive timeline for mobile */
+@media (max-width: 640px) {
+    .status-timeline {
+        padding: 16px 0;
+    }
+
+    .timeline-item {
+        padding: 8px 0 8px 40px;
+        margin-bottom: 16px;
+    }
+
+    .timeline-dot {
+        width: 20px;
+        height: 20px;
+        border-width: 2px;
+    }
+
+    .timeline-item.active .timeline-dot::after {
+        width: 6px;
+        height: 6px;
+    }
+
+    .timeline-title {
+        font-size: 0.9rem;
+    }
+
+    .timeline-date,
+    .timeline-info {
+        font-size: 0.8rem;
     }
 }
 

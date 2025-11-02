@@ -38,9 +38,9 @@ class Product extends Model
 
         $bindings = [];
         
-        // filter search
+        // filter search - FIX: Case-insensitive search using LOWER()
         if (!empty($filters['search'])) {
-            $sql .= " AND (p.product_name LIKE :search OR p.description LIKE :search)";
+            $sql .= " AND (LOWER(p.product_name) LIKE LOWER(:search) OR LOWER(p.description) LIKE LOWER(:search) OR LOWER(p.search_cache) LIKE LOWER(:search))";
             $bindings[':search'] = '%' . $filters['search'] . '%';
         }
         
@@ -226,9 +226,9 @@ class Product extends Model
         $sql = "SELECT p.* FROM {$this->table} p WHERE p.store_id = :store_id AND p.deleted_at IS NULL";
         $bindings = [':store_id' => $storeId];
         
-        // filter search
+        // filter search - FIX: Case-insensitive search using LOWER()
         if (!empty($filters['search'])) {
-            $sql .= " AND (p.product_name LIKE :search OR p.description LIKE :search)";
+            $sql .= " AND (LOWER(p.product_name) LIKE LOWER(:search) OR LOWER(p.description) LIKE LOWER(:search) OR LOWER(p.search_cache) LIKE LOWER(:search))";
             $bindings[':search'] = '%' . $filters['search'] . '%';
         }
         

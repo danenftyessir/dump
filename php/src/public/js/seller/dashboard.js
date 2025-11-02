@@ -108,7 +108,12 @@ document.addEventListener('DOMContentLoaded', function() {
      */
     function handleFormSubmit(e) {
         e.preventDefault();
-        
+
+        // ✅ AC: Confirmation Modal sebelum save (Spesifikasi hal 31-32)
+        if (!confirm('Yakin ingin menyimpan perubahan informasi toko?')) {
+            return;
+        }
+
         const form = e.target;
         const submitBtn = document.getElementById('saveBtn');
         const formData = new FormData(form);
@@ -120,13 +125,27 @@ document.addEventListener('DOMContentLoaded', function() {
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<span class="spinner"></span> Menyimpan...';
 
+        // ✅ AC: Progress Bar Upload (Spesifikasi hal 31 - opsional tapi bagus untuk UX)
+        const progressBar = createProgressBar();
+
         const xhr = new XMLHttpRequest();
         xhr.open('POST', '/api/seller/store/update', true);
-        
+
         // Kita tidak set Content-Type, biarkan browser menentukannya untuk FormData
         xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-        
+
+        // ✅ Track upload progress
+        xhr.upload.addEventListener('progress', function(e) {
+            if (e.lengthComputable) {
+                const percentComplete = Math.round((e.loaded / e.total) * 100);
+                updateProgressBar(progressBar, percentComplete);
+            }
+        });
+
         xhr.onload = function() {
+            // Hide progress bar when complete
+            removeProgressBar(progressBar);
+
             submitBtn.disabled = false;
             submitBtn.innerHTML = 'Simpan Perubahan';
 
@@ -187,13 +206,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 showToast('Gagal memproses respons server. Periksa console untuk detail.', 'error');
             }
         };
-        
+
         xhr.onerror = function() {
+            removeProgressBar(progressBar);
             submitBtn.disabled = false;
             submitBtn.innerHTML = 'Simpan Perubahan';
             showToast('Gagal terhubung ke server. Periksa koneksi Anda.', 'error');
         };
-        
+
         xhr.send(formData);
     }
 });
@@ -243,4 +263,72 @@ function escapeHtml(text) {
          .replace(/>/g, "&gt;")
          .replace(/"/g, "&quot;")
          .replace(/'/g, "&#039;");
+}
+
+/**
+ * ✅ Progress Bar Helper Functions (AC: Spesifikasi hal 31)
+ * Membuat, update, dan remove progress bar untuk upload
+ */
+function createProgressBar() {
+    // Create progress bar container
+    const progressContainer = document.createElement('div');
+    progressContainer.className = 'upload-progress-container';
+    progressContainer.innerHTML = `
+        <div class="upload-progress-wrapper">
+            <div class="upload-progress-info">
+                <span class="upload-progress-label">Mengupload...</span>
+                <span class="upload-progress-percent">0%</span>
+            </div>
+            <div class="upload-progress-bar">
+                <div class="upload-progress-fill" style="width: 0%"></div>
+            </div>
+        </div>
+    `;
+
+    // Insert into modal body
+    const modalBody = document.querySelector('.modal-body');
+    if (modalBody) {
+        modalBody.insertBefore(progressContainer, modalBody.firstChild);
+    }
+
+    return progressContainer;
+}
+
+function updateProgressBar(progressContainer, percent) {
+    if (!progressContainer) return;
+
+    const fill = progressContainer.querySelector('.upload-progress-fill');
+    const percentText = progressContainer.querySelector('.upload-progress-percent');
+
+    if (fill) {
+        fill.style.width = percent + '%';
+    }
+
+    if (percentText) {
+        percentText.textContent = percent + '%';
+    }
+
+    // Update label based on progress
+    const label = progressContainer.querySelector('.upload-progress-label');
+    if (label) {
+        if (percent >= 100) {
+            label.textContent = 'Memproses...';
+        } else if (percent >= 50) {
+            label.textContent = 'Mengupload... Hampir selesai';
+        }
+    }
+}
+
+function removeProgressBar(progressContainer) {
+    if (progressContainer && progressContainer.parentNode) {
+        // Fade out animation
+        progressContainer.style.opacity = '0';
+        progressContainer.style.transition = 'opacity 0.3s ease';
+
+        setTimeout(() => {
+            if (progressContainer.parentNode) {
+                progressContainer.parentNode.removeChild(progressContainer);
+            }
+        }, 300);
+    }
 }

@@ -51,12 +51,12 @@ function togglePassword(fieldId, iconId) {
     if (passwordField && passwordToggleIcon) {
         if (passwordField.type === 'password') {
             passwordField.type = 'text';
-            passwordToggleIcon.classList.remove('fa-eye');
-            passwordToggleIcon.classList.add('fa-eye-slash');
+            passwordToggleIcon.classList.remove('icon-eye');
+            passwordToggleIcon.classList.add('icon-eye-slash');
         } else {
             passwordField.type = 'password';
-            passwordToggleIcon.classList.remove('fa-eye-slash');
-            passwordToggleIcon.classList.add('fa-eye');
+            passwordToggleIcon.classList.remove('icon-eye-slash');
+            passwordToggleIcon.classList.add('icon-eye');
         }
     } else {
         console.error("Password field or toggle icon not found!", fieldId, iconId);

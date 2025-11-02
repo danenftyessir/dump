@@ -125,7 +125,13 @@ class Order extends Model
             $sql .= " AND o.created_at <= :date_to";
             $bindings[':date_to'] = $filters['date_to'];
         }
-        
+
+        // filter search - FIX: Case-insensitive search for Order ID or Buyer Name
+        if (!empty($filters['search'])) {
+            $sql .= " AND (LOWER(CAST(o.order_id AS CHAR)) LIKE LOWER(:search) OR LOWER(u.name) LIKE LOWER(:search))";
+            $bindings[':search'] = '%' . $filters['search'] . '%';
+        }
+
         // count total
         $countSql = "SELECT COUNT(*) as total FROM ({$sql}) as filtered";
         $countStmt = $this->db->prepare($countSql);
@@ -581,8 +587,28 @@ class Order extends Model
         }
 
         $query = "UPDATE orders SET " . implode(', ', $setClause) . " WHERE order_id = :order_id";
-        
+
         $stmt = $this->db->prepare($query);
         return $stmt->execute($params);
+    }
+
+    /**
+     * Cek apakah produk ada di pesanan yang sedang diproses
+     * @param int $productId
+     * @return bool
+     */
+    public function isProductInPendingOrders($productId)
+    {
+        $query = "SELECT COUNT(*) as count
+                  FROM order_items oi
+                  INNER JOIN orders o ON oi.order_id = o.order_id
+                  WHERE oi.product_id = :product_id
+                  AND o.status IN ('waiting_approval', 'approved', 'on_delivery')";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->execute(['product_id' => $productId]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $result['count'] > 0;
     }
 }

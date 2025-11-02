@@ -11,6 +11,8 @@ use Service\AuthService;
 use Service\CSRFService;
 use Service\FileService;
 use Service\LoggerService;
+use Service\AdvancedSearchService;
+use Service\CSVExportService;
 use Validator\ProductValidator;
 use Exception\ValidationException;
 use Exception;
@@ -26,9 +28,11 @@ class ProductController extends Controller
     private LoggerService $logger;
     private FileService $fileService;
     private ProductValidator $productValidator;
+    private AdvancedSearchService $searchService;
+    private CSVExportService $csvExportService;
 
     // Ctor
-    public function __construct(Product $productModel, Category $categoryModel, Store $storeModel, AuthService $authService, Order $orderModel, CSRFService $csrfService, LoggerService $logger, FileService $fileService, ProductValidator $productValidator) {
+    public function __construct(Product $productModel, Category $categoryModel, Store $storeModel, AuthService $authService, Order $orderModel, CSRFService $csrfService, LoggerService $logger, FileService $fileService, ProductValidator $productValidator, AdvancedSearchService $searchService, CSVExportService $csvExportService) {
         $this->productModel = $productModel;
         $this->categoryModel = $categoryModel;
         $this->storeModel = $storeModel;
@@ -38,6 +42,8 @@ class ProductController extends Controller
         $this->logger = $logger;
         $this->fileService = $fileService;
         $this->productValidator = $productValidator;
+        $this->searchService = $searchService;
+        $this->csvExportService = $csvExportService;
     }
 
     // Menampilkan halaman product management(seller)
@@ -135,11 +141,6 @@ class ProductController extends Controller
     // api untuk mengupdate produk(seller)
     public function update($params) {
         try {
-            error_log('=== UPDATE PRODUCT DEBUG ===');
-            error_log('Params: ' . json_encode($params));
-            error_log('POST data: ' . json_encode(array_keys($_POST)));
-            error_log('FILES data: ' . json_encode(array_keys($_FILES)));
-
             $sellerId = $this->authService->getCurrentUserId();
             $store = $this->storeModel->findByUserId($sellerId);
 
@@ -150,15 +151,10 @@ class ProductController extends Controller
                 $productId = (int)$params;
             }
 
-            error_log('Product ID: ' . $productId);
-
             $product = $this->productModel->find($productId);
             if (!$product || $product['store_id'] != $store['store_id']) {
-                error_log('ERROR: Product not found or access denied');
                 return $this->error('Akses ditolak.', 403);
             }
-
-            error_log('Product found, proceeding with update...');
 
             $data = $_POST;
             $fileData = $_FILES['main_image'] ?? null;
@@ -191,6 +187,14 @@ class ProductController extends Controller
             
             $this->productModel->commit();
 
+            // Auto-index for advanced search
+            $updatedProduct = $this->productModel->find($productId);
+            $this->searchService->indexProduct(
+                $productId,
+                $updatedProduct['product_name'],
+                $updatedProduct['description']
+            );
+
             return $this->success('Produk berhasil diperbarui.');
 
         } catch (ValidationException $e) {
@@ -207,13 +211,6 @@ class ProductController extends Controller
         try {
             $sellerId = $this->authService->getCurrentUserId();
             $store = $this->storeModel->findByUserId($sellerId);
-
-            // debug log
-            error_log('=== PRODUCT STORE DEBUG ===');
-            error_log('POST data: ' . json_encode(array_keys($_POST)));
-            error_log('FILES data: ' . json_encode(array_keys($_FILES)));
-            error_log('category_ids: ' . json_encode($_POST['category_ids'] ?? 'NOT SET'));
-            error_log('main_image error: ' . ($_FILES['main_image']['error'] ?? 'NOT SET'));
 
             // validasi input
             $this->productValidator->validate($_POST, $_FILES['main_image'] ?? null, false);
@@ -245,6 +242,13 @@ class ProductController extends Controller
 
             $this->productModel->commit();
 
+            // Auto-index for advanced search
+            $this->searchService->indexProduct(
+                $newProduct['product_id'],
+                $data['product_name'],
+                $data['description']
+            );
+
             return $this->success('Produk berhasil ditambahkan', $newProduct);
         } catch (ValidationException $ve) {
             return $this->error('Validasi gagal', 400, $ve->getErrors());
@@ -258,15 +262,8 @@ class ProductController extends Controller
     // menampilkan form edit produk(seller)
     public function edit($params) {
         try {
-            error_log('=== EDIT PRODUCT DEBUG ===');
-            error_log('Params: ' . json_encode($params));
-            error_log('Params type: ' . gettype($params));
-
             $sellerId = $this->authService->getCurrentUserId();
-            error_log('Seller ID: ' . $sellerId);
-
             $store = $this->storeModel->findByUserId($sellerId);
-            error_log('Store: ' . json_encode($store));
 
             // Handle both string and array params
             if (is_array($params)) {
@@ -274,26 +271,21 @@ class ProductController extends Controller
             } else {
                 $productId = (int)$params;
             }
-            error_log('Product ID: ' . $productId);
 
             if (!$productId) {
-                error_log('ERROR: Product ID is 0 or invalid');
                 $this->authService->setFlashMessage('error', 'ID produk tidak valid.');
                 return $this->redirect('/seller/products');
             }
 
             $product = $this->productModel->find($productId);
-            error_log('Product found: ' . json_encode($product));
 
             // Otorisasi: Pastikan produk milik seller ini
             if (!$product) {
-                error_log('ERROR: Product not found');
                 $this->authService->setFlashMessage('error', 'Produk tidak ditemukan.');
                 return $this->redirect('/seller/products');
             }
 
             if ($product['store_id'] != $store['store_id']) {
-                error_log('ERROR: Store ID mismatch. Product store: ' . $product['store_id'] . ', User store: ' . $store['store_id']);
                 $this->authService->setFlashMessage('error', 'Anda tidak memiliki akses ke produk ini.');
                 return $this->redirect('/seller/products');
             }
@@ -310,6 +302,55 @@ class ProductController extends Controller
         } catch (Exception $e) {
             $this->logger->logError('Gagal memuat form edit produk', ['error' => $e->getMessage()]);
             $this->authService->setFlashMessage('error', 'Gagal memuat halaman.');
+            return $this->redirect('/seller/products');
+        }
+    }
+
+    // Export products to CSV
+    public function export() {
+        try {
+            // Middleware already checked auth & seller role, just get user ID
+            $sellerId = $this->authService->getCurrentUserId();
+
+            // Get seller's store
+            $store = $this->storeModel->findByUserId($sellerId);
+
+            if (!$store) {
+                $this->authService->setFlashMessage('error', 'Toko tidak ditemukan.');
+                return $this->redirect('/seller/dashboard');
+            }
+
+            // Get all products for this store (without pagination for export)
+            $result = $this->productModel->getProductsForSeller($store['store_id'], [
+                'page' => 1,
+                'limit' => 10000  // Get all products (large limit)
+            ]);
+            $products = $result['products'] ?? [];
+
+            // Add category name to each product
+            foreach ($products as &$product) {
+                // Get first category name if exists
+                if (!empty($product['categories'])) {
+                    $product['category_name'] = $product['categories'][0]['name'] ?? 'N/A';
+                } else {
+                    $product['category_name'] = 'N/A';
+                }
+            }
+            unset($product); // Break reference
+
+            // Generate CSV
+            $csvContent = $this->csvExportService->exportProducts($products);
+
+            // Generate filename with timestamp (sanitize store name for filename)
+            $storeName = preg_replace('/[^a-zA-Z0-9_-]/', '_', $store['store_name']);
+            $filename = 'products_' . $storeName . '_' . date('Y-m-d_His') . '.csv';
+
+            // Send CSV download
+            $this->csvExportService->downloadCSV($csvContent, $filename);
+
+        } catch (Exception $e) {
+            $this->logger->logError('Gagal export produk', ['error' => $e->getMessage()]);
+            $this->authService->setFlashMessage('error', 'Gagal export produk.');
             return $this->redirect('/seller/products');
         }
     }

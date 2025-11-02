@@ -59,12 +59,45 @@ function initQuillEditor() {
         }
     });
 
+    // Tambahkan aria-labels untuk accessibility
+    addQuillAccessibilityLabels();
+
     // update hidden input saat konten berubah
     quill.on('text-change', function() {
         const html = quill.root.innerHTML;
         document.getElementById('description').value = html;
         updateDescCharCount();
     });
+}
+
+// Menambahkan aria-labels untuk Quill toolbar buttons
+function addQuillAccessibilityLabels() {
+    // Tunggu DOM update setelah Quill diinisialisasi
+    setTimeout(() => {
+        const toolbar = document.querySelector('.ql-toolbar');
+        if (!toolbar) return;
+
+        // Bold button
+        const boldBtn = toolbar.querySelector('.ql-bold');
+        if (boldBtn) boldBtn.setAttribute('aria-label', 'Tebal (Bold)');
+
+        // Italic button
+        const italicBtn = toolbar.querySelector('.ql-italic');
+        if (italicBtn) italicBtn.setAttribute('aria-label', 'Miring (Italic)');
+
+        // Underline button
+        const underlineBtn = toolbar.querySelector('.ql-underline');
+        if (underlineBtn) underlineBtn.setAttribute('aria-label', 'Garis Bawah (Underline)');
+
+        // List buttons
+        const listBtns = toolbar.querySelectorAll('.ql-list');
+        if (listBtns[0]) listBtns[0].setAttribute('aria-label', 'Daftar Bernomor (Ordered List)');
+        if (listBtns[1]) listBtns[1].setAttribute('aria-label', 'Daftar Bullet (Bullet List)');
+
+        // Clean formatting button
+        const cleanBtn = toolbar.querySelector('.ql-clean');
+        if (cleanBtn) cleanBtn.setAttribute('aria-label', 'Hapus Format (Clear Formatting)');
+    }, 100);
 }
 
 // =================================================================

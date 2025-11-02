@@ -9,6 +9,7 @@ use Service\AuthService;
 use Service\OrderService;
 use Service\CSRFService;
 use Service\LoggerService;
+use Service\CSVExportService;
 use Exception;
 
 class SellerOrderController extends Controller
@@ -19,8 +20,9 @@ class SellerOrderController extends Controller
     private OrderService $orderService;
     private CSRFService $csrfService;
     private LoggerService $logger;
+    private CSVExportService $csvExportService;
 
-    public function __construct(Order $orderModel, Store $storeModel, AuthService $authService, OrderService $orderService, CSRFService $csrfService, LoggerService $logger)
+    public function __construct(Order $orderModel, Store $storeModel, AuthService $authService, OrderService $orderService, CSRFService $csrfService, LoggerService $logger, CSVExportService $csvExportService)
     {
         $this->orderModel = $orderModel;
         $this->storeModel = $storeModel;
@@ -28,6 +30,7 @@ class SellerOrderController extends Controller
         $this->orderService = $orderService;
         $this->csrfService = $csrfService;
         $this->logger = $logger;
+        $this->csvExportService = $csvExportService;
     }
 
     // Menampilkan halaman daftar order(seller)
@@ -145,6 +148,47 @@ class SellerOrderController extends Controller
         } catch (Exception $e) {
             $this->logger->logError('Set delivery gagal', ['order_id' => $orderId, 'error' => $e->getMessage()]);
             return $this->error($e->getMessage(), 400);
+        }
+    }
+
+    // Export orders to CSV
+    public function export() {
+        try {
+            $sellerId = $this->authService->getCurrentUserId();
+            $store = $this->storeModel->findByUserId($sellerId);
+
+            if (!$store) {
+                $this->authService->setFlashMessage('error', 'Toko tidak ditemukan.');
+                return $this->redirect('/seller/dashboard');
+            }
+
+            // Get filters from query params
+            $filters = [
+                'status' => $_GET['status'] ?? 'all',
+                'search' => $_GET['search'] ?? null,
+                'page' => 1,
+                'limit' => 10000  // Get all orders (large limit for export)
+            ];
+
+            // Get all orders for this store (without pagination for export)
+            $orderData = $this->orderModel->getOrdersForSeller($store['store_id'], $filters);
+            $orders = $orderData['orders'] ?? [];
+
+            // Generate CSV
+            $csvContent = $this->csvExportService->exportOrders($orders);
+
+            // Generate filename with timestamp
+            $storeName = preg_replace('/[^a-zA-Z0-9_-]/', '_', $store['store_name']);
+            $statusLabel = $filters['status'] === 'all' ? 'semua' : $filters['status'];
+            $filename = 'orders_' . $storeName . '_' . $statusLabel . '_' . date('Y-m-d_His') . '.csv';
+
+            // Send CSV download
+            $this->csvExportService->downloadCSV($csvContent, $filename);
+
+        } catch (Exception $e) {
+            $this->logger->logError('Gagal export orders', ['error' => $e->getMessage()]);
+            $this->authService->setFlashMessage('error', 'Gagal export orders.');
+            return $this->redirect('/seller/orders');
         }
     }
 }

@@ -14,8 +14,7 @@ $oldInput = $oldInput ?? [];
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Register</title>
     <link rel="stylesheet" href="/css/auth/register.css">
-    <!-- Untuk sementara gini dulu dah icon, ntar diganti -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="/css/icons.css">
     <!-- Include Quill stylesheet -->
     <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet" />
     <style>
@@ -51,7 +50,7 @@ $oldInput = $oldInput ?? [];
                 <h2>INFORMASI AKUN</h2>
                 
                 <div class="avatar-placeholder">
-                    <i class="fas fa-user"></i>
+                    <span class="icon icon-user icon-2xl"></span>
                 </div>
 
                 <!-- Registration Form (email, password, role) -->
@@ -70,10 +69,10 @@ $oldInput = $oldInput ?? [];
                     <div class="input-group password-group">
                         <label for="password">Kata Sandi</label>
                         
-                        <div class="input-icon-wrapper"> 
+                        <div class="input-icon-wrapper">
                             <input type="password" id="password" name="password" placeholder="Minimal 8 karakter" required
                                 class="<?php echo isset($errors['password']) ? 'is-invalid' : ''; ?>">
-                            <i class="fas fa-eye password-toggle" id="passwordToggleIcon" onclick="togglePassword('password', 'passwordToggleIcon')"></i>
+                            <span class="icon icon-eye password-toggle" id="passwordToggleIcon" onclick="togglePassword('password', 'passwordToggleIcon')"></span>
                         </div>
                         <?php if (isset($errors['password'])): ?>
                             <span class="error-message"><?php echo htmlspecialchars($errors['password']); ?></span>
@@ -82,10 +81,10 @@ $oldInput = $oldInput ?? [];
 
                     <div class="input-group password-group">
                         <label for="password_confirm">Konfirmasi Kata Sandi</label>
-                        <div class="input-icon-wrapper"> 
+                        <div class="input-icon-wrapper">
                             <input type="password" id="password_confirm" name="password_confirm" placeholder="Ulangi Kata Sandi" required
                                 class="<?php echo isset($errors['password_confirm']) ? 'is-invalid' : ''; ?>">
-                            <i class="fas fa-eye password-toggle" id="confirmPasswordToggleIcon" onclick="togglePassword('password_confirm', 'confirmPasswordToggleIcon')"></i>
+                            <span class="icon icon-eye password-toggle" id="confirmPasswordToggleIcon" onclick="togglePassword('password_confirm', 'confirmPasswordToggleIcon')"></span>
                         </div>
                         <?php if (isset($errors['password_confirm'])): ?>
                             <span class="error-message"><?php echo htmlspecialchars($errors['password_confirm']); ?></span>

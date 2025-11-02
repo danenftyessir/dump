@@ -91,8 +91,43 @@ $userBalance = (int)($currentUser['balance']);
 </nav>
 
 <script>
-// User dropdown toggle untuk navbar seller
+// Navbar functionality untuk seller
 document.addEventListener('DOMContentLoaded', function() {
+    // ============================================
+    // Mobile Menu Toggle
+    // ============================================
+    const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+    const navbarMenu = document.getElementById('navbarMenu');
+
+    if (mobileMenuToggle && navbarMenu) {
+        mobileMenuToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            // Toggle mobile menu visibility
+            navbarMenu.classList.toggle('navbar-menu-open');
+            navbarMenu.classList.toggle('active');
+        });
+
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!mobileMenuToggle.contains(e.target) && !navbarMenu.contains(e.target)) {
+                navbarMenu.classList.remove('navbar-menu-open');
+                navbarMenu.classList.remove('active');
+            }
+        });
+
+        // Close mobile menu when clicking on a menu link
+        const menuLinks = navbarMenu.querySelectorAll('.navbar-link');
+        menuLinks.forEach(function(link) {
+            link.addEventListener('click', function() {
+                navbarMenu.classList.remove('navbar-menu-open');
+                navbarMenu.classList.remove('active');
+            });
+        });
+    }
+
+    // ============================================
+    // User Dropdown Toggle
+    // ============================================
     const userDropdownToggle = document.getElementById('userDropdownToggle');
     const userDropdownMenu = document.getElementById('userDropdownMenu');
 

@@ -11,7 +11,7 @@ let filterState = {
     categoryId: '',
     sortBy: 'created_at',
     sortOrder: 'DESC',
-    limit: 10
+    limit: 12  // Sesuai spesifikasi: 4, 8, 12, atau 20
 };
 let deleteProductId = null;
 
@@ -78,6 +78,16 @@ function initFilterHandlers() {
                 filterState.sortBy = 'created_at';
                 filterState.sortOrder = 'DESC';
             }
+            currentPage = 1;
+            loadProducts();
+        });
+    }
+
+    // limit filter
+    const limitFilter = document.getElementById('limitFilter');
+    if (limitFilter) {
+        limitFilter.addEventListener('change', function() {
+            filterState.limit = parseInt(this.value);
             currentPage = 1;
             loadProducts();
         });
@@ -150,6 +160,7 @@ function renderProducts(products) {
 
     // hide loading
     loadingState.classList.add('hidden');
+    loadingState.classList.remove('flex');
 
     if (!products || products.length === 0) {
         // show empty state
@@ -173,7 +184,7 @@ function createProductRow(product) {
     const status = product.stock > 0 ? 'Tersedia' : 'Habis';
     const statusClass = product.stock > 0 ? 'status-available' : 'status-out';
     const stockClass = product.stock < 10 && product.stock > 0 ? 'stock-low' : '';
-    
+
     // format kategori
     let categoriesText = '-';
     if (product.categories && product.categories.length > 0) {
@@ -185,9 +196,9 @@ function createProductRow(product) {
             <td class="product-info-cell">
                 <div class="product-info">
                     <div class="product-thumbnail">
-                        <img 
-                            src="${escapeHtml(imagePath)}" 
-                            alt="${escapeHtml(product.product_name)}"
+                        <img
+                            src="${escapeHtml(imagePath)}"
+                            alt="Foto produk ${escapeHtml(product.product_name)}"
                             onerror="this.src='/asset/placeholder-product.jpg'"
                         >
                     </div>
@@ -204,30 +215,30 @@ function createProductRow(product) {
                 <span class="product-price">Rp ${price}</span>
             </td>
             <td class="stock-cell">
-                <span class="product-stock ${stockClass}">${product.stock}</span>
+                <span class="product-stock ${stockClass}" aria-label="Stok ${product.stock} unit">${product.stock}</span>
             </td>
             <td class="status-cell">
-                <span class="status-badge ${statusClass}">${status}</span>
+                <span class="status-badge ${statusClass}" aria-label="Status produk ${status}">${status}</span>
             </td>
             <td class="action-cell">
-                <div class="action-buttons">
-                    <button 
-                        class="btn-action btn-edit" 
+                <div class="action-buttons" role="group" aria-label="Aksi produk ${escapeHtml(product.product_name)}">
+                    <button
+                        class="btn-action btn-edit"
                         onclick="editProduct(${product.product_id})"
-                        title="Edit Produk"
+                        aria-label="Edit produk ${escapeHtml(product.product_name)}"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                         </svg>
                         <span>Edit</span>
                     </button>
-                    <button 
-                        class="btn-action btn-delete" 
+                    <button
+                        class="btn-action btn-delete"
                         onclick="showDeleteModal(${product.product_id}, '${escapeHtml(product.product_name)}')"
-                        title="Hapus Produk"
+                        aria-label="Hapus produk ${escapeHtml(product.product_name)}"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M3 6h18"/>
                             <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
                             <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
@@ -258,31 +269,33 @@ function renderPagination(pagination) {
     container.classList.remove('hidden');
     container.classList.add('flex');
     container.innerHTML = `
-        <div class="pagination-info">
+        <div class="pagination-info" role="status" aria-live="polite">
             Halaman ${currentPage} dari ${totalPages} (Total: ${pagination.total_items} Produk)
         </div>
-        <div class="pagination-buttons">
-            <button 
-                class="pagination-btn" 
+        <nav class="pagination-buttons" aria-label="Navigasi halaman produk" role="navigation">
+            <button
+                class="pagination-btn"
                 onclick="changePage(${currentPage - 1})"
-                ${currentPage <= 1 ? 'disabled' : ''}
+                aria-label="Halaman sebelumnya"
+                ${currentPage <= 1 ? 'disabled aria-disabled="true"' : 'aria-disabled="false"'}
             >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <polyline points="15 18 9 12 15 6"/>
                 </svg>
                 <span>Sebelumnya</span>
             </button>
-            <button 
-                class="pagination-btn" 
+            <button
+                class="pagination-btn"
                 onclick="changePage(${currentPage + 1})"
-                ${currentPage >= totalPages ? 'disabled' : ''}
+                aria-label="Halaman selanjutnya"
+                ${currentPage >= totalPages ? 'disabled aria-disabled="true"' : 'aria-disabled="false"'}
             >
                 <span>Selanjutnya</span>
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <polyline points="9 18 15 12 9 6"/>
                 </svg>
             </button>
-        </div>
+        </nav>
     `;
 }
 
@@ -309,7 +322,9 @@ function showDeleteModal(productId, productName) {
 
 function closeDeleteModal() {
     deleteProductId = null;
-    document.getElementById('deleteModal').classList.add('hidden');
+    const modal = document.getElementById('deleteModal');
+    modal.classList.remove('flex');
+    modal.classList.add('hidden');
 }
 
 async function confirmDelete() {
@@ -324,17 +339,19 @@ async function confirmDelete() {
         const csrfData = await csrfResponse.json();
         const csrfToken = csrfData.data.token;
 
+        // Gunakan URLSearchParams untuk mengirim data sebagai form-urlencoded
+        const formData = new URLSearchParams();
+        formData.append('_token', csrfToken);
+
         // delete product
         const response = await fetch(`/api/seller/products/delete/${deleteProductId}`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-Token': csrfToken,
-                'X-Requested-With': 'XMLHttpRequest'
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-Token': csrfToken
             },
-            body: JSON.stringify({
-                csrf_token: csrfToken
-            })
+            body: formData.toString()
         });
 
         const data = await response.json();
@@ -344,7 +361,7 @@ async function confirmDelete() {
             showToast('Produk Berhasil Dihapus');
             loadProducts();
         } else {
-            throw new Error(data.error || 'Gagal menghapus produk');
+            throw new Error(data.message || 'Gagal menghapus produk');
         }
 
     } catch (error) {

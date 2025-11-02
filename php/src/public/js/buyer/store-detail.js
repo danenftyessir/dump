@@ -174,7 +174,7 @@ function createProductCard(product) {
     let cartButtonHtml = '';
     if (IS_LOGGED_IN && IS_BUYER && !isOutOfStock) {
         cartButtonHtml = `<button class="btn-add-to-cart" data-product-id="${product.product_id}">
-                            <i class="fas fa-cart-plus"></i>
+                            <span class="icon icon-cart"></span>
                           </button>`;
     }
 

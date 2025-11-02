@@ -74,14 +74,7 @@ class AuthMiddleware
 
     // cek apakah user adalah seller
     public function handleSeller($next) {
-        error_log('=== SELLER MIDDLEWARE DEBUG ===');
-        error_log('Request URI: ' . ($_SERVER['REQUEST_URI'] ?? 'N/A'));
-        error_log('Is logged in: ' . ($this->authService->isLoggedIn() ? 'YES' : 'NO'));
-        error_log('Is seller: ' . ($this->authService->isSeller() ? 'YES' : 'NO'));
-
         if (!$this->authService->isSeller()) {
-            error_log('ERROR: User is not a seller, redirecting to /');
-
             if ($this->isAjaxRequest()) {
                 $this->jsonError('akses ditolak. anda bukan seller', 403);
             }
@@ -91,7 +84,6 @@ class AuthMiddleware
             exit();
         }
 
-        error_log('SUCCESS: User is seller, proceeding...');
         return $next();
     }
 
@@ -118,28 +110,19 @@ class AuthMiddleware
             // ambil token dari berbagai sumber
             $token = $_POST['csrf_token'] ?? 
                      $_POST['_token'] ?? 
-                     $_SERVER['HTTP_X_CSRF_TOKEN'] ?? 
+                     $_SERVER['HTTP_X_CSRF_TOKEN'] ??
                      '';
 
-            // debug log
-            error_log('csrf validation - method: ' . $method);
-            error_log('csrf token received: ' . substr($token, 0, 20) . '...');
-            error_log('csrf token from session: ' . substr($_SESSION['csrf_token'] ?? '', 0, 20) . '...');
-
             if (!$this->csrfService->verify($token)) {
-                error_log('csrf validation failed!');
-                
                 if ($this->isAjaxRequest()) {
                     $this->jsonError('token keamanan tidak valid', 403);
                 }
-                
+
                 $this->authService->setFlashMessage('error', 'token keamanan tidak valid. silakan coba lagi');
                 $referer = $_SERVER['HTTP_REFERER'] ?? '/';
                 header("Location: " . $referer);
                 exit();
             }
-            
-            error_log('csrf validation success!');
         }
 
         return $next();

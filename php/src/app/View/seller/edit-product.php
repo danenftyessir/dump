@@ -14,10 +14,20 @@ $productCategoryIds = array_column($productCategories, 'category_id');
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Produk - Nimonspedia</title>
+
+    <!-- DNS Prefetch & Preconnect untuk CDN eksternal -->
+    <link rel="dns-prefetch" href="https://cdn.quilljs.com">
+    <link rel="preconnect" href="https://cdn.quilljs.com" crossorigin>
+
+    <!-- Critical CSS -->
+    <link rel="stylesheet" href="/css/components/navbar-base.css">
+    <link rel="stylesheet" href="/css/components/navbar-seller.css">
     <link rel="stylesheet" href="/css/seller/seller-product-form.css">
     <link rel="stylesheet" href="/css/seller/seller-common.css">
-    <!-- quill editor untuk rich text -->
-    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+
+    <!-- Quill editor CSS v2.0.2 - defer loading dengan media print trick -->
+    <link rel="preload" href="https://cdn.quilljs.com/2.0.2/quill.snow.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdn.quilljs.com/2.0.2/quill.snow.css"></noscript>
 </head>
 <body>
     <!-- navbar seller -->
@@ -159,10 +169,10 @@ $productCategoryIds = array_column($productCategories, 'category_id');
                             <?php if (!empty($product['main_image_path'])): ?>
                                 <!-- show current image -->
                                 <div class="image-preview flex" id="imagePreview">
-                                    <img src="<?= htmlspecialchars($product['main_image_path']) ?>" alt="Current Product" id="previewImage">
+                                    <img src="<?= htmlspecialchars($product['main_image_path']) ?>" alt="Foto produk <?= htmlspecialchars($product['product_name']) ?>" id="previewImage" width="400" height="400" loading="lazy">
                                     <div class="preview-overlay">
-                                        <button type="button" class="btn-change-image" id="changeImageBtn">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <button type="button" class="btn-change-image" id="changeImageBtn" aria-label="Ganti foto produk">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                                                 <polyline points="17 8 12 3 7 8"/>
                                                 <line x1="12" y1="3" x2="12" y2="15"/>
@@ -172,7 +182,7 @@ $productCategoryIds = array_column($productCategories, 'category_id');
                                     </div>
                                 </div>
                                 <div class="upload-placeholder hidden" id="uploadPlaceholder">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                         <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
                                         <circle cx="8.5" cy="8.5" r="1.5"/>
                                         <polyline points="21 15 16 10 5 21"/>
@@ -183,7 +193,7 @@ $productCategoryIds = array_column($productCategories, 'category_id');
                             <?php else: ?>
                                 <!-- no image yet -->
                                 <div class="upload-placeholder" id="uploadPlaceholder">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                         <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
                                         <circle cx="8.5" cy="8.5" r="1.5"/>
                                         <polyline points="21 15 16 10 5 21"/>
@@ -192,15 +202,17 @@ $productCategoryIds = array_column($productCategories, 'category_id');
                                     <p class="upload-hint">Format: JPG, PNG, WEBP (Max 2MB)</p>
                                 </div>
                                 <div class="image-preview hidden" id="imagePreview">
-                                    <img src="" alt="Preview" id="previewImage">
-                                    <button type="button" class="btn-change-image" id="changeImageBtn">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                            <polyline points="17 8 12 3 7 8"/>
-                                            <line x1="12" y1="3" x2="12" y2="15"/>
-                                        </svg>
-                                        <span>Ganti Foto</span>
-                                    </button>
+                                    <img src="" alt="Preview produk" id="previewImage" width="400" height="400" loading="lazy">
+                                    <div class="preview-overlay">
+                                        <button type="button" class="btn-change-image" id="changeImageBtn" aria-label="Ganti foto produk">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                                <polyline points="17 8 12 3 7 8"/>
+                                                <line x1="12" y1="3" x2="12" y2="15"/>
+                                            </svg>
+                                            <span>Ganti Foto</span>
+                                        </button>
+                                    </div>
                                 </div>
                             <?php endif; ?>
                         </div>
@@ -210,11 +222,11 @@ $productCategoryIds = array_column($productCategories, 'category_id');
 
                 <!-- form actions -->
                 <div class="form-actions">
-                    <a href="/seller/products" class="btn-secondary">
+                    <a href="/seller/products" class="btn-secondary" aria-label="Batal dan kembali ke daftar produk">
                         <span>Batal</span>
                     </a>
-                    <button type="submit" class="btn-primary" id="submitBtn">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <button type="submit" class="btn-primary" id="submitBtn" aria-label="Simpan perubahan produk">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <polyline points="20 6 9 17 4 12"/>
                         </svg>
                         <span>Simpan Perubahan</span>
@@ -225,25 +237,25 @@ $productCategoryIds = array_column($productCategories, 'category_id');
     </div>
 
     <!-- loading overlay -->
-    <div id="loadingOverlay" class="loading-overlay hidden">
+    <div id="loadingOverlay" class="loading-overlay hidden" role="status" aria-live="assertive" aria-label="Memuat">
         <div class="loading-content">
-            <div class="loader"></div>
+            <div class="loader" aria-hidden="true"></div>
             <p>Menyimpan Perubahan...</p>
         </div>
     </div>
 
     <!-- toast notification -->
-    <div id="toast" class="toast hidden">
+    <div id="toast" class="toast hidden" role="alert" aria-live="assertive" aria-atomic="true">
         <div class="toast-content">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="toast-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="toast-icon" aria-hidden="true">
                 <polyline points="20 6 9 17 4 12"/>
             </svg>
             <span id="toastMessage">Berhasil!</span>
         </div>
     </div>
 
-    <!-- quill editor library -->
-    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
-    <script src="/js/seller/seller-product-edit.js?v=<?= time() ?>"></script>
+    <!-- quill editor library v2.0.2 - defer untuk performa -->
+    <script src="https://cdn.quilljs.com/2.0.2/quill.js" defer></script>
+    <script src="/js/seller/seller-product-edit.js?v=<?= time() ?>" defer></script>
 </body>
 </html>

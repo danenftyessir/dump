@@ -1,0 +1,643 @@
+/* ============================================
+   ICON SYSTEM - Pure CSS Icons (No Font Awesome)
+   Pengganti Font Awesome yang sesuai spesifikasi
+   ============================================ */
+
+.icon {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    vertical-align: middle;
+    position: relative;
+}
+
+/* Eye Icon (untuk password visibility toggle) */
+.icon-eye {
+    border: 2px solid currentColor;
+    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+    width: 16px;
+    height: 12px;
+}
+
+.icon-eye::before {
+    content: '';
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* Eye Slash Icon (password hidden) */
+.icon-eye-slash {
+    border: 2px solid currentColor;
+    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+    width: 16px;
+    height: 12px;
+}
+
+.icon-eye-slash::before {
+    content: '';
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.icon-eye-slash::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 2px;
+    background: currentColor;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+/* Shopping Cart Icon */
+.icon-cart::before {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 10px;
+    border: 2px solid currentColor;
+    border-top: none;
+    border-radius: 0 0 3px 3px;
+    top: 6px;
+    left: 1px;
+}
+
+.icon-cart::after {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 2px;
+    background: currentColor;
+    top: 2px;
+    left: 2px;
+    border-radius: 2px 2px 0 0;
+}
+
+/* User Icon */
+.icon-user::before {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.icon-user::after {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 8px;
+    border: 2px solid currentColor;
+    border-top: none;
+    border-radius: 0 0 50% 50%;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+/* Home Icon */
+.icon-home::before {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-bottom: 7px solid currentColor;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.icon-home::after {
+    content: '';
+    position: absolute;
+    width: 10px;
+    height: 8px;
+    border: 2px solid currentColor;
+    border-top: none;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+/* Box/Product Icon */
+.icon-box::before {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 10px;
+    border: 2px solid currentColor;
+    border-radius: 2px;
+    top: 4px;
+    left: 2px;
+}
+
+.icon-box::after {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 2px;
+    background: currentColor;
+    top: 4px;
+    left: 2px;
+}
+
+/* Order/List Icon */
+.icon-orders {
+    border: 2px solid currentColor;
+    border-radius: 2px;
+}
+
+.icon-orders::before {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 2px;
+    background: currentColor;
+    top: 3px;
+    left: 3px;
+}
+
+.icon-orders::after {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 2px;
+    background: currentColor;
+    top: 8px;
+    left: 3px;
+}
+
+/* Edit/Pencil Icon */
+.icon-edit::before {
+    content: '';
+    position: absolute;
+    width: 10px;
+    height: 2px;
+    background: currentColor;
+    transform: rotate(45deg);
+    top: 2px;
+    left: 4px;
+}
+
+.icon-edit::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-left: 3px solid transparent;
+    border-right: 3px solid transparent;
+    border-bottom: 4px solid currentColor;
+    transform: rotate(45deg);
+    top: 0;
+    left: 11px;
+}
+
+/* Delete/Trash Icon */
+.icon-delete {
+    border: 2px solid currentColor;
+    border-top: none;
+    border-radius: 0 0 2px 2px;
+    margin-top: 3px;
+}
+
+.icon-delete::before {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 2px;
+    background: currentColor;
+    top: -3px;
+    left: 0;
+}
+
+.icon-delete::after {
+    content: '';
+    position: absolute;
+    width: 2px;
+    height: 6px;
+    background: currentColor;
+    top: 3px;
+    left: 5px;
+}
+
+/* Search Icon */
+.icon-search::before {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+    top: 0;
+    left: 0;
+}
+
+.icon-search::after {
+    content: '';
+    position: absolute;
+    width: 6px;
+    height: 2px;
+    background: currentColor;
+    transform: rotate(45deg);
+    bottom: 0;
+    right: 0;
+}
+
+/* Plus Icon */
+.icon-plus::before {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 2px;
+    background: currentColor;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.icon-plus::after {
+    content: '';
+    position: absolute;
+    width: 2px;
+    height: 12px;
+    background: currentColor;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* Minus Icon */
+.icon-minus::before {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 2px;
+    background: currentColor;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* Money/Dollar Icon */
+.icon-money {
+    border: 2px solid currentColor;
+    border-radius: 50%;
+}
+
+.icon-money::before {
+    content: 'Rp';
+    position: absolute;
+    font-size: 8px;
+    font-weight: bold;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* Warning/Alert Icon */
+.icon-warning {
+    border: 2px solid currentColor;
+    border-radius: 50%;
+}
+
+.icon-warning::before {
+    content: '!';
+    position: absolute;
+    font-size: 12px;
+    font-weight: bold;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    line-height: 1;
+}
+
+/* Check/Success Icon */
+.icon-check::before {
+    content: '';
+    position: absolute;
+    width: 6px;
+    height: 2px;
+    background: currentColor;
+    transform: rotate(45deg);
+    bottom: 4px;
+    left: 2px;
+}
+
+.icon-check::after {
+    content: '';
+    position: absolute;
+    width: 10px;
+    height: 2px;
+    background: currentColor;
+    transform: rotate(-45deg);
+    bottom: 4px;
+    left: 4px;
+}
+
+/* Close/X Icon */
+.icon-close::before {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 2px;
+    background: currentColor;
+    transform: rotate(45deg);
+    top: 50%;
+    left: 50%;
+    margin-left: -6px;
+    margin-top: -1px;
+}
+
+.icon-close::after {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 2px;
+    background: currentColor;
+    transform: rotate(-45deg);
+    top: 50%;
+    left: 50%;
+    margin-left: -6px;
+    margin-top: -1px;
+}
+
+/* Chevron Down */
+.icon-chevron-down::before {
+    content: '';
+    position: absolute;
+    width: 6px;
+    height: 2px;
+    background: currentColor;
+    transform: rotate(45deg);
+    top: 6px;
+    left: 3px;
+}
+
+.icon-chevron-down::after {
+    content: '';
+    position: absolute;
+    width: 6px;
+    height: 2px;
+    background: currentColor;
+    transform: rotate(-45deg);
+    top: 6px;
+    left: 7px;
+}
+
+/* Chevron Up */
+.icon-chevron-up::before {
+    content: '';
+    position: absolute;
+    width: 6px;
+    height: 2px;
+    background: currentColor;
+    transform: rotate(-45deg);
+    top: 8px;
+    left: 3px;
+}
+
+.icon-chevron-up::after {
+    content: '';
+    position: absolute;
+    width: 6px;
+    height: 2px;
+    background: currentColor;
+    transform: rotate(45deg);
+    top: 8px;
+    left: 7px;
+}
+
+/* Logout Icon */
+.icon-logout::before {
+    content: '';
+    position: absolute;
+    width: 10px;
+    height: 12px;
+    border: 2px solid currentColor;
+    border-right: none;
+    border-radius: 3px 0 0 3px;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+}
+
+.icon-logout::after {
+    content: '→';
+    position: absolute;
+    font-size: 12px;
+    font-weight: bold;
+    top: 50%;
+    right: 0;
+    transform: translateY(-50%);
+    line-height: 1;
+}
+
+/* Lock Icon (untuk password) */
+.icon-lock::before {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 6px;
+    border: 2px solid currentColor;
+    border-bottom: none;
+    border-radius: 4px 4px 0 0;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.icon-lock::after {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 8px;
+    border: 2px solid currentColor;
+    border-radius: 2px;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    background: currentColor;
+}
+
+/* Envelope/Email Icon */
+.icon-envelope {
+    border: 2px solid currentColor;
+    border-radius: 2px;
+    width: 14px;
+    height: 10px;
+}
+
+.icon-envelope::before {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-top: 5px solid currentColor;
+    top: 0;
+    left: 0;
+}
+
+/* Heart Icon */
+.icon-heart::before {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 12px;
+    background: currentColor;
+    border-radius: 50% 50% 0 0;
+    transform: rotate(-45deg);
+    top: 2px;
+    left: 2px;
+}
+
+.icon-heart::after {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 12px;
+    background: currentColor;
+    border-radius: 50% 50% 0 0;
+    transform: rotate(45deg);
+    top: 2px;
+    left: 6px;
+}
+
+/* Star Icon */
+.icon-star::before {
+    content: '★';
+    position: absolute;
+    font-size: 16px;
+    line-height: 1;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* Filter Icon */
+.icon-filter {
+    width: 14px;
+    height: 12px;
+}
+
+.icon-filter::before {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-top: 6px solid currentColor;
+    top: 0;
+    left: 0;
+}
+
+.icon-filter::after {
+    content: '';
+    position: absolute;
+    width: 4px;
+    height: 6px;
+    border: 2px solid currentColor;
+    border-top: none;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+/* Calendar Icon */
+.icon-calendar {
+    border: 2px solid currentColor;
+    border-radius: 2px;
+    width: 14px;
+    height: 14px;
+}
+
+.icon-calendar::before {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 4px;
+    background: currentColor;
+    top: 0;
+    left: 0;
+    border-radius: 2px 2px 0 0;
+}
+
+.icon-calendar::after {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 2px;
+    background: currentColor;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+/* Image Icon */
+.icon-image {
+    border: 2px solid currentColor;
+    border-radius: 2px;
+    width: 14px;
+    height: 12px;
+}
+
+.icon-image::before {
+    content: '';
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+}
+
+.icon-image::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 4px solid currentColor;
+    bottom: 2px;
+    right: 2px;
+}
+
+/* Sizes */
+.icon-sm {
+    font-size: 0.875em; /* 14px if base is 16px */
+}
+
+.icon-lg {
+    font-size: 1.25em; /* 20px if base is 16px */
+}
+
+.icon-xl {
+    font-size: 1.5em; /* 24px if base is 16px */
+}
+
+.icon-2xl {
+    font-size: 2em; /* 32px if base is 16px */
+}

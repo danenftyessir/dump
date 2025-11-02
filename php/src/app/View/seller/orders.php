@@ -36,6 +36,16 @@ $stats = $stats ?? [
                     <h1 class="page-title">Kelola Pesanan</h1>
                     <p class="page-subtitle">Pantau Dan Proses Pesanan Dari Pembeli</p>
                 </div>
+                <div class="header-right">
+                    <a href="/seller/orders/export" class="btn-secondary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        <span>Export CSV</span>
+                    </a>
+                </div>
             </div>
         </section>
 
@@ -98,6 +108,20 @@ $stats = $stats ?? [
                     <a href="/seller/orders?status=rejected&page=1" class="filter-tab <?= $currentStatus === 'rejected' ? 'active' : '' ?>">
                         Ditolak
                     </a>
+                </div>
+            </section>
+
+            <!-- search section -->
+            <section class="search-section">
+                <div class="search-container">
+                    <input type="text"
+                           id="searchInput"
+                           class="search-input"
+                           placeholder="Cari Order ID atau Nama Buyer..."
+                           value="<?= htmlspecialchars($_GET['search'] ?? '') ?>">
+                    <button class="btn-clear-search" id="btnClearSearch" style="display: <?= !empty($_GET['search']) ? 'block' : 'none' ?>">
+                        ✕
+                    </button>
                 </div>
             </section>
 
