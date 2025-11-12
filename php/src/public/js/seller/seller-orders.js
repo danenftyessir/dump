@@ -21,7 +21,7 @@ function viewOrderDetail(orderId) {
     
     // fetch data pesanan via AJAX
     const xhr = new XMLHttpRequest();
-    xhr.open('GET', `/api/seller/orders/detail?order_id=${orderId}`, true);
+    xhr.open('GET', `/api/seller/orders/${orderId}`, true);
     
     xhr.onload = function() {
         if (xhr.status === 200) {
@@ -408,17 +408,17 @@ function approveOrder(orderId) {
 // fungsi untuk submit approve order (AJAX)
 function submitApproveOrder(orderId) {
     const deliveryTime = document.getElementById('deliveryTime').value;
-    
+
     if (!deliveryTime) {
         alert('Silakan pilih estimasi waktu pengiriman');
         return;
     }
-    
+
     // kirim request via AJAX
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', '/api/seller/orders/update-status', true);
-    xhr.setRequestHeader('Content-Type', 'application/json');
-    
+    xhr.open('POST', `/api/seller/orders/approve/${orderId}`, true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+
     xhr.onload = function() {
         if (xhr.status === 200) {
             try {
@@ -438,16 +438,16 @@ function submitApproveOrder(orderId) {
             alert('Gagal menghubungi server');
         }
     };
-    
+
     xhr.onerror = function() {
         alert('Terjadi kesalahan jaringan');
     };
-    
-    xhr.send(JSON.stringify({
-        order_id: orderId,
-        status: 'approved',
-        delivery_time: deliveryTime
-    }));
+
+    // Get CSRF token from meta tag or hidden input
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content ||
+                     document.querySelector('input[name="_token"]')?.value || '';
+
+    xhr.send(`delivery_time=${encodeURIComponent(deliveryTime)}&_token=${encodeURIComponent(csrfToken)}`);
 }
 
 // fungsi untuk menampilkan form reject
@@ -481,21 +481,21 @@ function showRejectForm(orderId) {
 // fungsi untuk submit reject order (AJAX)
 function submitRejectOrder(orderId) {
     const rejectReason = document.getElementById('rejectReason').value.trim();
-    
+
     if (!rejectReason) {
         alert('Silakan berikan alasan penolakan');
         return;
     }
-    
+
     if (!confirm('Apakah Anda yakin ingin menolak pesanan ini?')) {
         return;
     }
-    
+
     // kirim request via AJAX
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', '/api/seller/orders/update-status', true);
-    xhr.setRequestHeader('Content-Type', 'application/json');
-    
+    xhr.open('POST', `/api/seller/orders/reject/${orderId}`, true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+
     xhr.onload = function() {
         if (xhr.status === 200) {
             try {
@@ -515,16 +515,16 @@ function submitRejectOrder(orderId) {
             alert('Gagal menghubungi server');
         }
     };
-    
+
     xhr.onerror = function() {
         alert('Terjadi kesalahan jaringan');
     };
-    
-    xhr.send(JSON.stringify({
-        order_id: orderId,
-        status: 'rejected',
-        reject_reason: rejectReason
-    }));
+
+    // Get CSRF token from meta tag or hidden input
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content ||
+                     document.querySelector('input[name="_token"]')?.value || '';
+
+    xhr.send(`reject_reason=${encodeURIComponent(rejectReason)}&_token=${encodeURIComponent(csrfToken)}`);
 }
 
 // fungsi untuk menampilkan form ship order
@@ -532,12 +532,12 @@ function showShipForm(orderId) {
     if (!confirm('Apakah Anda yakin pesanan sudah siap dikirim?')) {
         return;
     }
-    
+
     // kirim request via AJAX
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', '/api/seller/orders/update-status', true);
-    xhr.setRequestHeader('Content-Type', 'application/json');
-    
+    xhr.open('POST', `/api/seller/orders/set-delivery/${orderId}`, true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+
     xhr.onload = function() {
         if (xhr.status === 200) {
             try {
@@ -557,15 +557,16 @@ function showShipForm(orderId) {
             alert('Gagal menghubungi server');
         }
     };
-    
+
     xhr.onerror = function() {
         alert('Terjadi kesalahan jaringan');
     };
-    
-    xhr.send(JSON.stringify({
-        order_id: orderId,
-        status: 'on_delivery'
-    }));
+
+    // Get CSRF token from meta tag or hidden input
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content ||
+                     document.querySelector('input[name="_token"]')?.value || '';
+
+    xhr.send(`_token=${encodeURIComponent(csrfToken)}`);
 }
 
 // fungsi untuk menutup modal

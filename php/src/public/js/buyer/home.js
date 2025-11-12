@@ -83,6 +83,37 @@ function initializeEventListeners() {
             loadProducts();
         });
     }
+
+    // items per page
+    const itemsPerPageSelect = document.getElementById('itemsPerPage');
+    if (itemsPerPageSelect) {
+        itemsPerPageSelect.addEventListener('change', function(e) {
+            filterState.limit = parseInt(e.target.value);
+            currentPage = 1;
+            loadProducts();
+        });
+    }
+
+    // pagination buttons
+    const btnPrevPage = document.getElementById('btnPrevPage');
+    if (btnPrevPage) {
+        btnPrevPage.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (currentPage > 1) {
+                goToPage(currentPage - 1);
+            }
+        });
+    }
+
+    const btnNextPage = document.getElementById('btnNextPage');
+    if (btnNextPage) {
+        btnNextPage.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (currentPage < totalPages) {
+                goToPage(currentPage + 1);
+            }
+        });
+    }
 }
 
 // perform search immediately
@@ -95,9 +126,9 @@ function performSearch() {
     }
 }
 
-// reset all filters
+// Fungsi untuk mereset semua filter pencarian dan mengembalikan ke nilai awal
 function resetFilters() {
-    // reset filter state
+    // Reset nilai filter di state JS
     filterState.search = '';
     filterState.categoryId = '';
     filterState.minPrice = '';
@@ -105,14 +136,15 @@ function resetFilters() {
     filterState.sortBy = 'created_at';
     filterState.sortOrder = 'DESC';
 
-    // reset form inputs
+    // Reset input form di halaman
     document.getElementById('mainSearchInput').value = '';
     document.getElementById('categoryFilter').value = '';
     document.getElementById('minPrice').value = '';
     document.getElementById('maxPrice').value = '';
     document.getElementById('sortBy').value = 'created_at';
+    document.getElementById('itemsPerPage').value = '12';
 
-    // reload products
+    // Kembali ke halaman pertama dan muat ulang produk
     currentPage = 1;
     loadProducts();
 }
@@ -179,61 +211,156 @@ function loadProducts() {
     xhr.send();
 }
 
-// Render products
 function renderProducts(products) {
     const productsGrid = document.getElementById('productsGrid');
     const emptyState = document.getElementById('emptyState');
-    const loadingState = document.getElementById('loadingState');
-
-    // hide loading
-    loadingState.style.display = 'none';
+    
+    hideAllStates();
 
     if (!products || products.length === 0) {
-        // show empty state
-        productsGrid.style.display = 'none';
         emptyState.style.display = 'block';
         return;
     }
 
-    // show products
-    emptyState.style.display = 'none';
     productsGrid.style.display = 'grid';
-
-    // render product cards
-    productsGrid.innerHTML = products.map(product => createProductCard(product)).join('');
+    
+    // Bersihkan grid dan isi dengan kartu produk dari template
+    productsGrid.innerHTML = '';
+    products.forEach(product => {
+        const productCard = createProductCard(product);
+        productsGrid.appendChild(productCard);
+    });
 }
 
-// create product card HTML
+// Buat kartu produk menggunakan template HTML
 function createProductCard(product) {
+    // Ambil template dari HTML
+    const template = document.getElementById('productCardTemplate');
+    const clone = template.content.cloneNode(true);
+    
+    // Data produk
     const price = formatPrice(product.price);
     const imagePath = product.main_image_path || '/asset/placeholder-product.jpg';
     const stockText = product.stock > 0 ? `Stok: ${product.stock}` : 'Stok Habis';
     
-    return `
-        <div class="product-card" onclick="goToProduct(${product.product_id})">
-            <div class="product-image-wrapper">
-                <img 
-                    src="${escapeHtml(imagePath)}" 
-                    alt="${escapeHtml(product.product_name)}" 
-                    class="product-image"
-                    onerror="this.src='/asset/placeholder-product.jpg'"
-                >
-                ${product.stock < 10 && product.stock > 0 ? '<span class="product-badge">Stok Terbatas</span>' : ''}
-            </div>
-            <div class="product-content">
-                <h3 class="product-name">${escapeHtml(product.product_name)}</h3>
-                <p class="product-store">${escapeHtml(product.store_name)}</p>
-                <p class="product-price">${price}</p>
-                <p class="product-stock">${stockText}</p>
-            </div>
-        </div>
-    `;
+    // Ambil elemen dari template
+    const cardElement = clone.querySelector('.product-card');
+    const imageElement = clone.querySelector('.product-image');
+    const badgeElement = clone.querySelector('.product-badge');
+    const nameElement = clone.querySelector('.product-name');
+    const storeElement = clone.querySelector('.product-store');
+    const priceElement = clone.querySelector('.product-price');
+    const stockElement = clone.querySelector('.product-stock');
+    
+    // Set class untuk out of stock
+    if (product.stock === 0) {
+        cardElement.classList.add('out-of-stock');
+    }
+    
+    // Set click handler
+    cardElement.onclick = () => goToProduct(product.product_id);
+    
+    // Isi data ke template
+    imageElement.src = imagePath;
+    imageElement.alt = product.product_name;
+    imageElement.onerror = function() { this.src = '/asset/placeholder-product.jpg'; };
+    
+    nameElement.textContent = product.product_name;
+    storeElement.textContent = product.store_name;
+    priceElement.textContent = price;
+    
+    // Set stock text hanya jika ada stok
+    if (product.stock > 0) {
+        stockElement.textContent = stockText;
+    } else {
+        stockElement.style.display = 'none';
+    }
+    
+    // Set badge jika diperlukan
+    if (product.stock === 0) {
+        badgeElement.textContent = 'Stok Habis';
+        badgeElement.className = 'product-badge out-of-stock-badge';
+        badgeElement.style.display = 'block';
+    } else if (product.stock < 10 && product.stock > 0) {
+        badgeElement.textContent = 'Stok Terbatas';
+        badgeElement.className = 'product-badge';
+        badgeElement.style.display = 'block';
+    }
+    
+    return clone;
 }
 
-// Update pagination controls
-function updatePagination(pagination) {
-    totalPages = pagination.total_pages;
-    currentPage = pagination.current_page;
+// Fungsi untuk mengambil data produk dari server sesuai filter dan pagination
+function loadProducts() {
+    if (isLoading) return;
+
+    isLoading = true;
+    showLoadingState(); // Tampilkan animasi loading
+
+    // Siapkan parameter pencarian untuk API
+    const params = new URLSearchParams({
+        page: currentPage,
+        limit: filterState.limit,
+        sort_by: filterState.sortBy,
+        sort_order: filterState.sortOrder
+    });
+
+    // Tambahkan filter jika ada
+    if (filterState.search) params.append('search', filterState.search);
+    if (filterState.categoryId) params.append('category_id', filterState.categoryId);
+    if (filterState.minPrice) params.append('min_price', filterState.minPrice);
+    if (filterState.maxPrice) params.append('max_price', filterState.maxPrice);
+
+    // Update URL di browser agar bisa di-refresh/share
+    const queryString = params.toString();
+    const url = window.location.pathname + '?' + queryString;
+    window.history.pushState({ path: url }, '', url);
+
+    // Request data produk ke API
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", `/api/products?${queryString}`, true);
+
+    xhr.onload = function() {
+        // Jika request sukses
+        if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+                const data = JSON.parse(xhr.responseText);
+                if (data.success) {
+                    // Tampilkan produk dan update pagination
+                    renderProducts(data.data.products);
+                    updatePagination(data.data.pagination);
+                    updateProductsCount(data.data.pagination.total_items);
+                } else {
+                    throw new Error(data.message || 'Gagal memuat produk');
+                }
+            } catch (e) {
+                // Error parsing JSON
+                console.error('Error parsing JSON:', e);
+                showError('Gagal memproses respons server.');
+            }
+        } else {
+            // Jika error dari server
+            console.error('Error loading products:', xhr.statusText);
+            showError('Gagal memuat produk. Status: ' + xhr.status);
+        }
+        isLoading = false;
+    };
+
+    // Jika gagal koneksi ke server
+    xhr.onerror = function() {
+        console.error('Network error occurred');
+        showError('Gagal terhubung ke server. Periksa koneksi internet Anda.');
+        isLoading = false;
+    };
+
+    xhr.send(); // Kirim request
+}
+
+// Fungsi untuk mengupdate tampilan pagination berdasarkan data dari server
+function updatePagination(paginationData) {
+    // Update variabel global pagination
+    currentPage = parseInt(paginationData.current_page);
+    totalPages = parseInt(paginationData.total_pages);
 
     const paginationContainer = document.getElementById('paginationContainer');
     const paginationNumbers = document.getElementById('paginationNumbers');
@@ -317,6 +444,20 @@ function goToProduct(productId) {
     window.location.href = `/product/${productId}`;
 }
 
+function hideAllStates() {
+    const loadingState = document.getElementById('loadingState');
+    const productsGrid = document.getElementById('productsGrid');
+    const emptyState = document.getElementById('emptyState');
+    
+    if (loadingState) loadingState.style.display = 'none';
+    if (productsGrid) productsGrid.style.display = 'none';
+    if (emptyState) emptyState.style.display = 'none';
+}
+
+function formatPrice(price) { 
+    return 'Rp ' + parseInt(price).toLocaleString('id-ID'); 
+}
+
 function showLoadingState() {
     document.getElementById('loadingState').style.display = 'block';
     document.getElementById('productsGrid').style.display = 'none';
@@ -331,19 +472,16 @@ function updateProductsCount(total) {
 }
 
 function showError(message) {
-    const productsGrid = document.getElementById('productsGrid');
-    const loadingState = document.getElementById('loadingState');
+    hideAllStates();
     const emptyState = document.getElementById('emptyState');
-
-    loadingState.style.display = 'none';
-    productsGrid.style.display = 'none';
-    emptyState.style.display = 'block';
-
-    const emptyTitle = emptyState.querySelector('.empty-title');
-    const emptyDescription = emptyState.querySelector('.empty-description');
-    
-    if (emptyTitle) emptyTitle.textContent = 'Terjadi Kesalahan';
-    if (emptyDescription) emptyDescription.textContent = message;
+    if (emptyState) {
+        emptyState.style.display = 'block';
+        const emptyTitle = emptyState.querySelector('.empty-title');
+        const emptyDescription = emptyState.querySelector('.empty-description');
+        
+        if (emptyTitle) emptyTitle.textContent = 'Terjadi Kesalahan';
+        if (emptyDescription) emptyDescription.textContent = message;
+    }
 }
 
 function scrollToTop() {

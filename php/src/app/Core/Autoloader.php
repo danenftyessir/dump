@@ -11,10 +11,12 @@ class Autoloader
         $this->baseDir = dirname(__DIR__) . '/';
     }
 
+    // Register the autoloader
     public function register() {
         spl_autoload_register([$this, 'loadClass']);
     }
 
+    // Load class file based on namespace and class name
     public function loadClass($className) {
         $className = ltrim($className, '\\');
         $classPath = str_replace('\\', '/', $className);

@@ -1,0 +1,253 @@
+.topup-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(3px);
+}
+
+.topup-modal.show {
+    display: flex;
+}
+
+/* Modal Content */
+.topup-modal-content {
+    background: white;
+    border-radius: 16px;
+    padding: 0;
+    width: 90%;
+    max-width: 480px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    animation: modalSlideIn 0.3s ease-out;
+    overflow: hidden;
+}
+
+@keyframes modalSlideIn {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Modal Header */
+.topup-modal-header {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.topup-modal-header svg {
+    margin-right: 12px;
+    opacity: 0.9;
+}
+
+/* Modal Body */
+.topup-modal-body {
+    padding: 32px 24px;
+}
+
+.topup-quick-amounts {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.topup-quick-amount {
+    padding: 12px 16px;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    background: #f9fafb;
+    color: #374151;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    font-size: 14px;
+}
+
+.topup-quick-amount:hover {
+    border-color: #10b981;
+    background: #ecfdf5;
+    color: #10b981;
+    transform: translateY(-2px);
+}
+
+.topup-input {
+    width: 100%;
+    padding: 16px 20px;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    font-size: 16px;
+    color: #374151;
+    background: #f9fafb;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+}
+
+.topup-input:focus {
+    outline: none;
+    border-color: #10b981;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.topup-input::placeholder {
+    color: #9ca3af;
+}
+
+/* Modal Actions */
+.topup-modal-actions {
+    padding: 0 24px 24px;
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.topup-btn {
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    border: none;
+    transition: all 0.3s ease;
+    min-width: 100px;
+}
+
+.topup-btn-cancel {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+.topup-btn-cancel:hover {
+    background: #e5e7eb;
+    color: #374151;
+}
+
+.topup-btn-confirm {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+}
+
+.topup-btn-confirm:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+}
+
+.topup-btn-confirm:disabled {
+    background: #d1d5db;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Error/Success Messages */
+.topup-message {
+    margin-top: 16px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.topup-message.error {
+    background: #fee2e2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+
+.topup-message.success {
+    background: #d1fae5;
+    color: #059669;
+    border: 1px solid #a7f3d0;
+}
+
+.topup-toast {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    padding: 16px 24px;
+    border-radius: 12px;
+    color: white;
+    font-weight: 600;
+    z-index: 10001;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.3s ease;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.topup-toast-success {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.topup-toast-error {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.topup-toast-show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.topup-toast-hide {
+    opacity: 0;
+    transform: translateX(100%);
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .topup-modal-content {
+        width: 95%;
+        margin: 20px;
+    }
+    
+    .topup-modal-header {
+        padding: 20px;
+        font-size: 16px;
+    }
+    
+    .topup-modal-body {
+        padding: 24px 20px;
+    }
+    
+    .topup-quick-amounts {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+    
+    .topup-quick-amount {
+        padding: 10px 12px;
+        font-size: 13px;
+    }
+    
+    .topup-input {
+        padding: 14px 16px;
+        font-size: 15px;
+    }
+    
+    .topup-modal-actions {
+        padding: 0 20px 20px;
+        flex-direction: column;
+    }
+    
+    .topup-btn {
+        width: 100%;
+        padding: 14px;
+    }
+}

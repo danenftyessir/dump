@@ -1,16 +1,12 @@
-/* Import base styles */
-@import '/../base.css';
-
-/* Order History Page Specific Styles */
 body {
     background: var(--bg-secondary);
     min-height: 100vh;
-    padding: 20px;
 }
 
 .container {
     max-width: 1200px;
-    margin: 0 auto;
+    margin: 20px auto 0;
+    padding: 0 10px;
 }
 
 /* Header */
@@ -19,6 +15,9 @@ body {
     border-radius: 16px;
     padding: 15px;
     margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .page-header h1 {
@@ -29,6 +28,41 @@ body {
 .page-header p {
     color: #666;
     font-size: 14px;
+}
+
+/* Sort Control */
+.sort-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sort-control label {
+    font-size: 14px;
+    color: #666;
+    font-weight: 500;
+}
+
+.sort-select {
+    padding: 8px 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    background: white;
+    color: #333;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+    outline: none;
+}
+
+.sort-select:hover {
+    border-color: #00a860;
+}
+
+.sort-select:focus {
+    border-color: #00a860;
+    box-shadow: 0 0 0 3px rgba(0, 168, 96, 0.1);
 }
 
 /* Filter Tabs */
@@ -57,6 +91,7 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 8px;
+    font-family: inherit;
 }
 
 .filter-tab:hover {
@@ -65,7 +100,7 @@ body {
 }
 
 .filter-tab.active {
-    background: rgba(1, 238, 135, 0.325);
+    background: rgba(1, 238, 135, 0.171);
     color: #00a860;
     border-color: #00a860;
 }
@@ -311,15 +346,14 @@ body {
 
 /* Delivery Alert */
 .delivery-alert {
-    background: #f3e5f5;
-    border-left: 4px solid #9c27b0;
+    background: #00a85f19;
     padding: 15px;
     border-radius: 8px;
     margin-top: 15px;
 }
 
 .delivery-alert strong {
-    color: #6a1b9a;
+    color: #00a860;
 }
 
 /* Modal */
@@ -436,8 +470,11 @@ body {
 }
 
 .empty-icon {
-    font-size: 80px;
-    margin-bottom: 20px;
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 20px;
+    background: #f0f0f0;
+    border-radius: 50%;
     opacity: 0.3;
 }
 
@@ -453,13 +490,17 @@ body {
 }
 
 .btn-shop {
-    background: linear-gradient(135deg, var(--text-primary) 0%, #764ba2 100%);
+    background: var(--text-primary);
     color: white;
     padding: 12px 30px;
     border-radius: 8px;
     text-decoration: none;
     font-weight: 600;
     display: inline-block;
+}
+.btn-shop:hover {
+    background: #02824b;
+    transform: translateY(-1px);
 }
 
 /* Loading */
@@ -494,35 +535,18 @@ body {
     100% { transform: rotate(360deg); }
 }
 
-/* Toast */
-.toast {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    padding: 16px 24px;
-    border-radius: 8px;
-    color: white;
-    font-weight: 600;
-    z-index: 10001;
-    animation: slideIn 0.3s ease-out;
-    max-width: 400px;
-}
-
-.toast.success { background: #28a745; }
-.toast.error { background: #dc3545; }
-
-@keyframes slideIn {
-    from {
-        transform: translateX(400px);
-        opacity: 0;
+/* Responsive for 1280px and below */
+@media (max-width: 1280px) and (min-width: 769px) {
+    .container {
+        max-width: 1200px;
+        padding: 0 24px;
     }
-    to {
-        transform: translateX(0);
-        opacity: 1;
+    
+    .filter-tabs {
+        gap: 16px;
     }
 }
 
-/* Responsive */
 @media (max-width: 768px) {
     .order-header {
         flex-direction: column;
@@ -550,5 +574,59 @@ body {
     .filter-tab {
         padding: 8px 12px;
         font-size: 13px;
+    }
+}
+
+/* Responsive for 400px and below */
+@media (max-width: 400px) {
+    .container {
+        padding: 0 12px;
+    }
+    
+    .filter-tabs {
+        gap: 6px;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+    
+    .filter-tab {
+        padding: 6px 10px;
+        font-size: 0.75rem;
+        min-width: 60px;
+    }
+    
+    .order-card {
+        padding: 12px;
+    }
+    
+    .order-header h3 {
+        font-size: 0.875rem;
+    }
+    
+    .order-status {
+        padding: 4px 8px;
+        font-size: 0.75rem;
+    }
+    
+    .order-item {
+        padding: 12px;
+    }
+    
+    .item-image {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .item-name {
+        font-size: 0.875rem;
+    }
+    
+    .item-price {
+        font-size: 0.875rem;
+    }
+    
+    .btn {
+        padding: 8px 12px;
+        font-size: 0.75rem;
     }
 }

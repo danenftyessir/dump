@@ -20,9 +20,14 @@ $categories = $categories ?? [];
     <link rel="stylesheet" href="/css/seller/seller-product-form.css">
     <link rel="stylesheet" href="/css/seller/seller-common.css">
 
+<<<<<<< HEAD
     <!-- Quill editor CSS v2.0.2 - defer loading dengan media print trick -->
     <link rel="preload" href="https://cdn.quilljs.com/2.0.2/quill.snow.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="https://cdn.quilljs.com/2.0.2/quill.snow.css"></noscript>
+=======
+    <!-- Quill editor CSS v1.3.7 - versi stabil -->
+    <link rel="stylesheet" href="https://cdn.quilljs.com/1.3.7/quill.snow.css">
+>>>>>>> origin/master
 </head>
 <body>
     <!-- navbar seller -->
@@ -147,6 +152,7 @@ $categories = $categories ?? [];
                             Upload Foto <span class="required">*</span>
                         </label>
                         <div class="upload-area" id="uploadArea">
+<<<<<<< HEAD
                             <input 
                                 type="file" 
                                 id="mainImage" 
@@ -154,6 +160,14 @@ $categories = $categories ?? [];
                                 accept="image/jpeg,image/jpg,image/png,image/webp"
                                 hidden
                                 required
+=======
+                            <input
+                                type="file"
+                                id="mainImage"
+                                name="main_image"
+                                accept="image/jpeg,image/jpg,image/png,image/webp"
+                                hidden
+>>>>>>> origin/master
                             >
                             <div class="upload-placeholder" id="uploadPlaceholder">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -216,8 +230,18 @@ $categories = $categories ?? [];
         </div>
     </div>
 
+<<<<<<< HEAD
     <!-- quill editor library v2.0.2 - defer untuk performa -->
     <script src="https://cdn.quilljs.com/2.0.2/quill.js" defer></script>
     <script src="/js/seller/seller-product-form.js?v=<?= time() ?>" defer></script>
+=======
+    <!-- quill editor library v1.3.7 - versi stabil -->
+    <script>
+        // Flag untuk memastikan Quill loaded
+        window.quillLoaded = false;
+    </script>
+    <script src="https://cdn.quilljs.com/1.3.7/quill.js" onload="window.quillLoaded = true;" onerror="console.error('Failed to load Quill.js from CDN');"></script>
+    <script src="/js/seller/seller-product-form.js?v=<?= time() ?>"></script>
+>>>>>>> origin/master
 </body>
 </html>

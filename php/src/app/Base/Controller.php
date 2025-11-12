@@ -79,41 +79,9 @@ class Controller
         exit;
     }
 
-    # --------------------------------------------------------------------------
-
-    // get request method -> Harusnya di Router
-    protected function getMethod() {
-        return $_SERVER['REQUEST_METHOD'];
-    }
-
-    // check if request is ajax -> Harusnya di Router
+    // check if request is ajax (harusnya di router)
     protected function isAjax() {
         return !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
                strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
-    }
-
-    // get all input data -> Harusnya di Router
-    protected function getInput() {
-        $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
-        
-        if (strpos($contentType, 'application/json') !== false) {
-            $input = file_get_contents('php://input');
-            return json_decode($input, true) ?? [];
-        }
-        
-        return array_merge($_GET, $_POST);
-    }
-
-    // validate csrf token -> Harusnya di CSRFService
-    protected function validateCsrf() {
-        $token = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? null;
-        
-        if (!$token) {
-            return false;
-        }
-        
-        $sessionToken = $_SESSION['csrf_token'] ?? null;
-        
-        return $token === $sessionToken;
     }
 }

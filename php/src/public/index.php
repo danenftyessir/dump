@@ -31,12 +31,20 @@ $container->set('Database', function() {
 });
 
 // Binding Services
-$container->set('AuthService', function() {
-    return new Service\AuthService();
+$container->set('AuthService', function($c) {
+    return new Service\AuthService(
+        $c->get('User'),
+        $c->get('Store'),
+        $c->get('FileService')
+    );
 });
 
 $container->set('CSRFService', function() {
     return new Service\CSRFService();
+});
+
+$container->set('Request', function() {
+    return new Core\Request();
 });
 
 $container->set('RateLimitService', function() {
@@ -60,7 +68,10 @@ $container->set('CSVExportService', function() {
 });
 
 $container->set('CartService', function($c) {
-    return new Service\CartService($c->get('CartItem'));
+    return new Service\CartService(
+        $c->get('CartItem'),
+        $c->get('Product')
+    );
 });
 
 $container->set('OrderService', function($c) {
@@ -68,7 +79,8 @@ $container->set('OrderService', function($c) {
         $c->get('Order'),
         $c->get('OrderItem'),
         $c->get('User'),
-        $c->get('Product')
+        $c->get('Product'),
+        $c->get('CartService')
     );
 });
 
@@ -119,7 +131,8 @@ $container->set('AuthMiddleware', function($c) {
     return new Middleware\AuthMiddleware(
         $c->get('AuthService'),
         $c->get('CSRFService'),
-        $c->get('RateLimitService')
+        $c->get('RateLimitService'),
+        $c->get('Request')
     );
 });
 
@@ -131,6 +144,8 @@ $container->set('Controller\AuthController', function($c) {
         $c->get('UserValidator'),
         $c->get('CSRFService'),
         $c->get('LoggerService'),
+        $c->get('Request'),
+        $c->get('CartService'),
         $c->get('Store'),
         $c->get('FileService')
     );
@@ -141,7 +156,8 @@ $container->set('Controller\ProductDiscoveryController', function($c) {
         $c->get('Product'),
         $c->get('Category'),
         $c->get('AuthService'),
-        $c->get('CSRFService')
+        $c->get('CSRFService'),
+        $c->get('Request')
     );
 });
 
@@ -159,20 +175,20 @@ $container->set('Controller\CartItemController', function($c) {
     return new \Controller\CartItemController(
         $c->get('AuthService'),
         $c->get('CartService'),
-        $c->get('Product'),
         $c->get('CSRFService'),
-        $c->get('LoggerService')
+        $c->get('LoggerService'),
+        $c->get('Request')
     );
 });
 
 $container->set('Controller\CheckoutController', function($c) {
     return new Controller\CheckoutController(
-        $c->get('User'),
         $c->get('AuthService'),
         $c->get('OrderService'),
         $c->get('CartService'),
         $c->get('CSRFService'),
-        $c->get('LoggerService')
+        $c->get('LoggerService'),
+        $c->get('Request')
     );
 });
 
@@ -182,7 +198,8 @@ $container->set('Controller\OrderController', function($c) {
         $c->get('AuthService'),
         $c->get('OrderService'),
         $c->get('CSRFService'),
-        $c->get('LoggerService')
+        $c->get('LoggerService'),
+        $c->get('Request')
     );
 });
 
@@ -232,8 +249,9 @@ $container->set('Controller\BalanceController', function($c) {
     return new \Controller\BalanceController(
         $c->get('User'),
         $c->get('AuthService'),
+        $c->get('LoggerService'),
         $c->get('CSRFService'),
-        $c->get('LoggerService')
+        $c->get('Request')
     );
 });
 

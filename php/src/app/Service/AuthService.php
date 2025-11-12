@@ -2,25 +2,38 @@
 
 namespace Service;
 
+use Model\User;
+use Model\Store;
+use Service\FileService;
+use Exception;
+
 class AuthService
 {
-    // constructor
-    public function __construct() {
+    private User $userModel;
+    private Store $storeModel;
+    private FileService $fileService;
+
+    // Ctor
+    public function __construct(User $userModel = null, Store $storeModel = null, FileService $fileService = null) {
+        $this->userModel = $userModel;
+        $this->storeModel = $storeModel;
+        $this->fileService = $fileService;
     }
 
-    // Save User Data in Session after Login
+    // Saveuser data to session
     public function loginUser($user) {
         $_SESSION['user_id'] = $user['user_id'];
         $_SESSION['user_email'] = $user['email'];
         $_SESSION['user_name'] = $user['name'];
         $_SESSION['user_role'] = $user['role'];
         $_SESSION['user_balance'] = $user['balance'] ?? 0;
+        $_SESSION['user_address'] = $user['address'] ?? '';
         $_SESSION['logged_in'] = true;
 
         session_regenerate_id(true);
     }
 
-    // Logout User by Destroying Session
+    // Logout user from session
     public function logoutUser() {
         session_unset();
         session_destroy();
@@ -47,28 +60,75 @@ class AuthService
             'email' => $_SESSION['user_email'],
             'name' => $_SESSION['user_name'],
             'role' => $_SESSION['user_role'],
-            'balance' => $_SESSION['user_balance'] ?? 0
+            'balance' => $_SESSION['user_balance'] ?? 0,
+            'address' => $_SESSION['user_address'] ?? ''
         ];
     }
 
-    // Update User Data in Session
+    // Register user baru
+    public function registerUser(array $userData, ?array $fileData = null) {
+        $logoPath = null;
+        
+        // upload logo jika role seller
+        if ($userData['role'] === 'SELLER' && $fileData && $fileData['error'] === UPLOAD_ERR_OK) {
+            $logoPath = $this->fileService->upload($fileData, 'logos');
+        }
+
+        // buat user baru
+        $newUser = $this->userModel->createUser($userData);
+        if (!$newUser) {
+            throw new Exception('Failed to create user account.');
+        }
+
+        // jika seller, buat store baru
+        if ($newUser['role'] === 'SELLER') {
+            $storeCreated = $this->storeModel->createStore([
+                'user_id' => $newUser['user_id'],
+                'store_name' => $userData['store_name'],
+                'store_description' => $userData['store_description'],
+                'store_logo_path' => $logoPath,
+                'balance' => 0.00
+            ]);
+            
+            if (!$storeCreated) {
+                $this->userModel->delete($newUser['user_id']);
+                throw new Exception('Failed to create store for seller account.');
+            }
+        }
+
+        // remove password
+        unset($newUser['password']);
+        
+        // login user baru
+        $this->loginUser($newUser);
+        
+        return $newUser;
+    }
+
+    // Update user session data
     public function updateUserSession($data) {
         if (isset($data['name'])) {
             $_SESSION['user_name'] = $data['name'];
         }
+        if (isset($data['balance'])) {
+            $_SESSION['user_balance'] = $data['balance'];
+        }
+        if (isset($data['address'])) {
+            $_SESSION['user_address'] = $data['address'];
+        }
     }
 
-    // Check if Current User is Seller
+    // Check if current user is seller
     public function isSeller() {
         return $this->isLoggedIn() && ($_SESSION['user_role'] ?? '') === 'SELLER';
     }
 
-    // check if current user is buyer
+    // Check if current user is buyer
     public function isBuyer() {
         return $this->isLoggedIn() && ($_SESSION['user_role'] ?? '') === 'BUYER';
     }
 
-    // set flash message
+    // Set flash message
     public function setFlashMessage($type, $message) {
         $_SESSION['flash_' . $type] = $message;
     }

@@ -13,13 +13,45 @@ let isImageChanged = false;
 // =================================================================
 
 document.addEventListener('DOMContentLoaded', function() {
-    initQuillEditor();
-    initFormHandlers();
-    initImageUpload();
-    initCharCounters();
-    fetchCsrfToken();
-    loadInitialData();
+    // tunggu sampai Quill library loaded
+    waitForQuill().then(() => {
+        initQuillEditor();
+        initFormHandlers();
+        initImageUpload();
+        initCharCounters();
+        fetchCsrfToken();
+        loadInitialData();
+    }).catch(err => {
+        alert('gagal memuat editor. silakan refresh halaman.');
+    });
 });
+
+// fungsi helper untuk menunggu quill library
+function waitForQuill() {
+    return new Promise((resolve, reject) => {
+        // jika quill sudah tersedia, langsung resolve
+        if (typeof Quill !== 'undefined') {
+            resolve();
+            return;
+        }
+
+        // tunggu maksimal 10 detik
+        let attempts = 0;
+        const maxAttempts = 100; // 100 x 100ms = 10 detik
+
+        const checkQuill = setInterval(() => {
+            attempts++;
+
+            if (typeof Quill !== 'undefined') {
+                clearInterval(checkQuill);
+                resolve();
+            } else if (attempts >= maxAttempts) {
+                clearInterval(checkQuill);
+                reject(new Error('quill library tidak dimuat dalam waktu yang ditentukan. periksa koneksi internet atau coba refresh halaman.'));
+            }
+        }, 100);
+    });
+}
 
 // =================================================================
 // LOAD INITIAL DATA
@@ -45,29 +77,39 @@ function loadInitialData() {
 // =================================================================
 
 function initQuillEditor() {
+    const editorElement = document.getElementById('quillEditor');
+    if (!editorElement) {
+        return;
+    }
+
     const toolbarOptions = [
         ['bold', 'italic', 'underline'],
         [{ 'list': 'ordered'}, { 'list': 'bullet' }],
         ['clean']
     ];
 
-    quill = new Quill('#quillEditor', {
-        theme: 'snow',
-        placeholder: 'Tulis deskripsi produk...',
-        modules: {
-            toolbar: toolbarOptions
-        }
-    });
+    try {
+        quill = new Quill('#quillEditor', {
+            theme: 'snow',
+            placeholder: 'Tulis deskripsi produk di sini...',
+            modules: {
+                toolbar: toolbarOptions
+            }
+        });
 
-    // Tambahkan aria-labels untuk accessibility
-    addQuillAccessibilityLabels();
+        // Tambahkan aria-labels untuk accessibility
+        addQuillAccessibilityLabels();
 
-    // update hidden input saat konten berubah
-    quill.on('text-change', function() {
-        const html = quill.root.innerHTML;
-        document.getElementById('description').value = html;
-        updateDescCharCount();
-    });
+        // update hidden input saat konten berubah
+        quill.on('text-change', function() {
+            const html = quill.root.innerHTML;
+            document.getElementById('description').value = html;
+            updateDescCharCount();
+        });
+
+    } catch (error) {
+        alert('gagal menginisialisasi editor deskripsi. silakan refresh halaman.');
+    }
 }
 
 // Menambahkan aria-labels untuk Quill toolbar buttons
@@ -128,7 +170,7 @@ function initFormHandlers() {
     form.addEventListener('submit', handleFormSubmit);
 }
 
-async function handleFormSubmit(e) {
+function handleFormSubmit(e) {
     e.preventDefault();
 
     // validasi form
@@ -146,71 +188,77 @@ async function handleFormSubmit(e) {
     try {
         // prepare form data
         const formData = new FormData();
-        
+
         // tambahkan data form
+        const csrfToken = document.getElementById('csrfToken').value;
+
+        if (!csrfToken || csrfToken.length === 0) {
+            throw new Error('CSRF token tidak tersedia. Silakan refresh halaman.');
+        }
+
         formData.append('product_id', document.getElementById('productId').value);
         formData.append('product_name', document.getElementById('productName').value.trim());
         formData.append('description', document.getElementById('description').value);
         formData.append('price', document.getElementById('price').value);
         formData.append('stock', document.getElementById('stock').value);
-        formData.append('csrf_token', document.getElementById('csrfToken').value);
+        formData.append('csrf_token', csrfToken);
 
         // tambahkan kategori yang dipilih
         const selectedCategories = document.querySelectorAll('input[name="category_ids[]"]:checked');
-        console.log('Selected categories:', selectedCategories.length);
         selectedCategories.forEach(checkbox => {
             formData.append('category_ids[]', checkbox.value);
         });
 
         // tambahkan image jika ada perubahan
         const imageInput = document.getElementById('mainImage');
-        console.log('=== IMAGE INPUT DEBUG ===');
-        console.log('Image input element:', imageInput);
-        console.log('Files length:', imageInput ? imageInput.files.length : 'N/A');
-        console.log('Has files:', imageInput && imageInput.files.length > 0);
 
         if (imageInput && imageInput.files.length > 0) {
-            console.log('Appending image file:', imageInput.files[0].name, imageInput.files[0].size, imageInput.files[0].type);
             formData.append('main_image', imageInput.files[0]);
-        } else {
-            console.log('No image file to upload');
-        }
-
-        // Debug: Log FormData contents
-        console.log('=== FormData Contents ===');
-        for (let [key, value] of formData.entries()) {
-            if (key === 'main_image') {
-                console.log(`${key}: [File: ${value.name}, Size: ${value.size}]`);
-            } else {
-                console.log(`${key}: ${value}`);
-            }
         }
 
         // kirim data via AJAX
         const productId = document.getElementById('productId').value;
-        console.log('Sending update request to:', `/api/seller/products/update/${productId}`);
-        const response = await fetch(`/api/seller/products/update/${productId}`, {
-            method: 'POST',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: formData
-        });
 
-        const data = await response.json();
+        // Gunakan XMLHttpRequest
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `/api/seller/products/update/${productId}`, true);
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
 
-        if (data.success) {
-            showToast('Produk Berhasil Diperbarui');
-            // redirect ke halaman product management setelah 1.5 detik
-            setTimeout(() => {
-                window.location.href = '/seller/products';
-            }, 1500);
-        } else {
-            throw new Error(data.error || 'Gagal memperbarui produk');
-        }
+        xhr.onload = function() {
+            hideLoading();
+            submitBtn.disabled = false;
+
+            if (xhr.status === 200) {
+                try {
+                    const data = JSON.parse(xhr.responseText);
+
+                    if (data.success) {
+                        showToast('Produk Berhasil Diperbarui');
+                        setTimeout(() => {
+                            window.location.href = '/seller/products';
+                        }, 1500);
+                    } else {
+                        showToast(data.error || data.message || 'Gagal memperbarui produk', 'error');
+                    }
+                } catch (e) {
+                    showToast('Server mengembalikan response tidak valid', 'error');
+                }
+            } else if (xhr.status === 403) {
+                showToast('Akses ditolak. Silakan login ulang atau refresh halaman.', 'error');
+            } else {
+                showToast(`Terjadi kesalahan (${xhr.status}). Silakan coba lagi.`, 'error');
+            }
+        };
+
+        xhr.onerror = function() {
+            hideLoading();
+            submitBtn.disabled = false;
+            showToast('Gagal terhubung ke server', 'error');
+        };
+
+        xhr.send(formData);
 
     } catch (error) {
-        console.error('Error:', error);
         hideLoading();
         submitBtn.disabled = false;
         showToast(error.message || 'Terjadi kesalahan. Silakan coba lagi.', 'error');
@@ -381,16 +429,29 @@ function handleImageSelect(file) {
 // CSRF TOKEN
 // =================================================================
 
-async function fetchCsrfToken() {
-    try {
-        const response = await fetch('/api/csrf-token');
-        const data = await response.json();
-        if (data.success && data.data.token) {
-            document.getElementById('csrfToken').value = data.data.token;
+function fetchCsrfToken() {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', '/api/csrf-token', true);
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            try {
+                const data = JSON.parse(xhr.responseText);
+                if (data.success && data.data && data.data.token) {
+                    document.getElementById('csrfToken').value = data.data.token;
+                }
+            } catch (e) {
+                // silently fail
+            }
         }
-    } catch (error) {
-        console.error('Error fetching CSRF token:', error);
-    }
+    };
+
+    xhr.onerror = function() {
+        // silently fail
+    };
+
+    xhr.send();
 }
 
 // =================================================================

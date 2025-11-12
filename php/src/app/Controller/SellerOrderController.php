@@ -50,16 +50,29 @@ class SellerOrderController extends Controller
 
             // Ambil data pesanan
             $orderData = $this->orderModel->getOrdersForSeller($store['store_id'], $filters);
-            
+
             // Ambil statistik untuk tab filter
             $statusCounts = $this->orderModel->getOrderStatsByStatus($store['store_id']);
+
+            // Transform stats format for view: from ['count' => x, 'total_price' => y] to just the count
+            $stats = [
+                'waiting_approval' => $statusCounts['waiting_approval']['count'] ?? 0,
+                'approved' => $statusCounts['approved']['count'] ?? 0,
+                'on_delivery' => $statusCounts['on_delivery']['count'] ?? 0,
+                'received' => $statusCounts['received']['count'] ?? 0,
+                'rejected' => $statusCounts['rejected']['count'] ?? 0,
+            ];
 
             return $this->view('seller/orders', [
                 'orders' => $orderData['orders'],
                 'pagination' => $orderData['pagination'],
-                'statusCounts' => $statusCounts,
+                'stats' => $stats,
+                'statusCounts' => $statusCounts, // Keep full data for backward compatibility
                 'currentStatus' => $filters['status'],
                 'currentSearch' => $filters['search'],
+                'totalOrders' => $orderData['pagination']['total_items'] ?? 0,
+                'currentPage' => $orderData['pagination']['current_page'] ?? 1,
+                'totalPages' => $orderData['pagination']['total_pages'] ?? 1,
                 '_token' => $this->csrfService->getToken()
             ]);
         } catch (Exception $e) {
@@ -70,11 +83,11 @@ class SellerOrderController extends Controller
     }
 
     // api untuk mendapatkan detail order(seller)
-    public function getOrderDetail() {
+    public function getOrderDetail($id = null) {
         try {
             $sellerId = $this->authService->getCurrentUserId();
             $store = $this->storeModel->findByUserId($sellerId);
-            $orderId = (int)($params['id'] ?? 0);
+            $orderId = (int)$id;
 
             $order = $this->orderModel->getOrderDetailWithItems($orderId, $store['store_id']);
 
@@ -90,33 +103,42 @@ class SellerOrderController extends Controller
     }
 
     // api untuk approve order(seller)
-    public function approve($params) {
+    public function approve($id = null) {
         try {
             $sellerId = $this->authService->getCurrentUserId();
             $store = $this->storeModel->findByUserId($sellerId);
-            $orderId = (int)($params['id'] ?? 0);
-            
+            $orderId = (int)$id;
+
             $deliveryTime = $_POST['delivery_time'] ?? null;
-            if (empty($deliveryTime) || (int)$deliveryTime <= 0) {
-                return $this->error('Estimasi waktu pengiriman (hari) wajib diisi.', 400);
+            if (empty($deliveryTime)) {
+                return $this->error('Estimasi waktu pengiriman wajib diisi.', 400);
+            }
+            $deliveryDate = \DateTime::createFromFormat('Y-m-d', $deliveryTime);
+            if (!$deliveryDate || $deliveryDate->format('Y-m-d') !== $deliveryTime) {
+                return $this->error('Format tanggal pengiriman tidak valid.', 400);
+            }
+            $today = new \DateTime();
+            $today->setTime(0, 0, 0);
+            if ($deliveryDate <= $today) {
+                return $this->error('Tanggal pengiriman harus di masa depan.', 400);
             }
 
             $this->orderService->approveOrder($orderId, $store['store_id'], $deliveryTime);
-            
+
             return $this->success('Pesanan berhasil disetujui.');
 
         } catch (Exception $e) {
-            $this->logger->logError('Approve order gagal', ['order_id' => $orderId, 'error' => $e->getMessage()]);
+            $this->logger->logError('Approve order gagal', ['order_id' => $orderId ?? 0, 'error' => $e->getMessage()]);
             return $this->error($e->getMessage(), 400);
         }
     }
 
     // api untuk menolak order(seller)
-    public function reject($params) {
+    public function reject($id = null) {
         try {
             $sellerId = $this->authService->getCurrentUserId();
             $store = $this->storeModel->findByUserId($sellerId);
-            $orderId = (int)($params['id'] ?? 0);
+            $orderId = (int)$id;
             $reason = $_POST['reject_reason'] ?? '';
 
             if (empty(trim($reason))) {
@@ -134,15 +156,15 @@ class SellerOrderController extends Controller
     }
 
     // api untuk menandai order sebagai dikirim(seller)
-    public function setDelivery($params)
+    public function setDelivery($id = null)
     {
+        $orderId = (int)$id;
         try {
             $sellerId = $this->authService->getCurrentUserId();
             $store = $this->storeModel->findByUserId($sellerId);
-            $orderId = (int)($params['id'] ?? 0);
 
             $this->orderService->setOrderOnDelivery($orderId, $store['store_id']);
-            
+
             return $this->success('Status pesanan diubah menjadi "Dalam Pengiriman".');
 
         } catch (Exception $e) {

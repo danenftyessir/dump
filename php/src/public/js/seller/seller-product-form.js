@@ -12,11 +12,43 @@ let selectedImage = null;
 // =================================================================
 
 document.addEventListener('DOMContentLoaded', function() {
-    initQuillEditor();
-    initFormHandlers();
-    initImageUpload();
-    initCharCounters();
+    // tunggu sampai Quill library loaded
+    waitForQuill().then(() => {
+        initQuillEditor();
+        initFormHandlers();
+        initImageUpload();
+        initCharCounters();
+    }).catch(err => {
+        alert('gagal memuat editor. silakan refresh halaman.');
+    });
 });
+
+// fungsi helper untuk menunggu quill library
+function waitForQuill() {
+    return new Promise((resolve, reject) => {
+        // jika quill sudah tersedia, langsung resolve
+        if (typeof Quill !== 'undefined') {
+            resolve();
+            return;
+        }
+
+        // tunggu maksimal 10 detik
+        let attempts = 0;
+        const maxAttempts = 100; // 100 x 100ms = 10 detik
+
+        const checkQuill = setInterval(() => {
+            attempts++;
+
+            if (typeof Quill !== 'undefined') {
+                clearInterval(checkQuill);
+                resolve();
+            } else if (attempts >= maxAttempts) {
+                clearInterval(checkQuill);
+                reject(new Error('quill library tidak dimuat dalam waktu yang ditentukan. periksa koneksi internet atau coba refresh halaman.'));
+            }
+        }, 100);
+    });
+}
 
 // =================================================================
 // INISIALISASI QUILL EDITOR
@@ -25,7 +57,6 @@ document.addEventListener('DOMContentLoaded', function() {
 function initQuillEditor() {
     const editorElement = document.getElementById('quillEditor');
     if (!editorElement) {
-        console.error('quill editor element not found');
         return;
     }
 
@@ -35,26 +66,38 @@ function initQuillEditor() {
         ['clean']
     ];
 
-    quill = new Quill('#quillEditor', {
-        theme: 'snow',
-        placeholder: 'tulis deskripsi produk...',
-        modules: {
-            toolbar: toolbarOptions
-        }
-    });
+    try {
+        quill = new Quill('#quillEditor', {
+            theme: 'snow',
+            placeholder: 'Tulis deskripsi produk di sini...',
+            modules: {
+                toolbar: toolbarOptions
+            }
+        });
 
-    // Tambahkan aria-labels untuk accessibility
-    addQuillAccessibilityLabels();
+        // Tambahkan aria-labels untuk accessibility
+        addQuillAccessibilityLabels();
 
-    // update hidden input saat konten berubah
-    quill.on('text-change', function() {
-        const html = quill.root.innerHTML;
-        const descElement = document.getElementById('description');
-        if (descElement) {
-            descElement.value = html;
-        }
-        updateDescCharCount();
-    });
+        // update hidden input saat konten berubah
+        quill.on('text-change', function() {
+            const html = quill.root.innerHTML;
+            const descElement = document.getElementById('description');
+            if (descElement) {
+                descElement.value = html;
+            }
+            updateDescCharCount();
+        });
+
+        // set focus ke editor untuk memastikan bisa langsung digunakan
+        setTimeout(() => {
+            if (quill) {
+                quill.focus();
+            }
+        }, 100);
+
+    } catch (error) {
+        alert('gagal menginisialisasi editor deskripsi. silakan refresh halaman.');
+    }
 }
 
 // Menambahkan aria-labels untuk Quill toolbar buttons
@@ -123,10 +166,9 @@ function updateDescCharCount() {
 function initFormHandlers() {
     const form = document.getElementById('productForm');
     if (!form) {
-        console.error('form element not found');
         return;
     }
-    
+
     form.addEventListener('submit', handleFormSubmit);
 }
 

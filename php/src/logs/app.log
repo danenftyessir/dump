@@ -2,10 +2,53 @@
 [2025-10-31 07:38:00] [ERROR]: Login failed {"email":"Sheza@gmail.com","error":"Invalid email or password.","ip":"172.20.0.1"}
 [2025-10-31 07:48:05] [ERROR]: Login failed {"email":"hasri@gmail.com","error":"Invalid email or password.","ip":"172.20.0.1"}
 [2025-10-31 10:22:18] [ERROR]: Registration failed {"email":"farrel@gmail.com","name":"Farrel","error":"SQLSTATE[23502]: Not null violation: 7 ERROR:  null value in column \"user_id\" of relation \"stores\" violates not-null constraint\nDETAIL:  Failing row contains (2, null, Tole, Toko Kopi, file_69048dda5abf8_1761906138.png, 0, 2025-10-31 10:22:18.706211, 2025-10-31 10:22:18.706211).","ip":"172.20.0.1"}
-[2025-11-02 11:58:20] [ERROR]: Gagal memuat halaman daftar pesanan {"error":"SQLSTATE[22P02]: Invalid text representation: 7 ERROR:  invalid input value for enum order_status: \"all\"\nCONTEXT:  unnamed portal parameter $2 = '...'"}
-[2025-11-02 11:58:21] [ERROR]: Gagal memuat halaman daftar pesanan {"error":"SQLSTATE[22P02]: Invalid text representation: 7 ERROR:  invalid input value for enum order_status: \"all\"\nCONTEXT:  unnamed portal parameter $2 = '...'"}
-[2025-11-02 11:58:22] [ERROR]: Gagal memuat halaman daftar pesanan {"error":"SQLSTATE[22P02]: Invalid text representation: 7 ERROR:  invalid input value for enum order_status: \"all\"\nCONTEXT:  unnamed portal parameter $2 = '...'"}
-[2025-11-02 11:59:47] [ERROR]: Gagal memuat halaman daftar pesanan {"error":"SQLSTATE[22P02]: Invalid text representation: 7 ERROR:  invalid input value for enum order_status: \"all\"\nCONTEXT:  unnamed portal parameter $2 = '...'"}
-[2025-11-02 11:59:55] [ERROR]: Gagal memuat halaman daftar pesanan {"error":"SQLSTATE[22P02]: Invalid text representation: 7 ERROR:  invalid input value for enum order_status: \"all\"\nCONTEXT:  unnamed portal parameter $2 = '...'"}
-[2025-11-02 12:01:06] [ERROR]: Gagal memuat halaman daftar pesanan {"error":"SQLSTATE[22P02]: Invalid text representation: 7 ERROR:  invalid input value for enum order_status: \"all\"\nCONTEXT:  unnamed portal parameter $2 = '...'"}
-[2025-11-02 12:03:56] [ERROR]: Gagal memuat halaman daftar pesanan {"error":"SQLSTATE[22P02]: Invalid text representation: 7 ERROR:  invalid input value for enum order_status: \"all\"\nCONTEXT:  unnamed portal parameter $2 = '...'"}
+[2025-11-02 03:22:27] [ERROR]: Login failed {"email":"seller@test.com","error":"Invalid email or password.","ip":"172.19.0.1"}
+[2025-11-02 14:16:50] [INFO]: TopUp attempt {"buyer_id":4,"post_data":{"amount":"50000","_token":"b89ef135ece83da2da77c45c384e5896f4e8a8e32956b4f08cfee3aad406336b"}}
+[2025-11-02 14:16:50] [INFO]: TopUp success {"buyer_id":4,"amount":50000,"new_balance":75000}
+[2025-11-02 14:18:34] [INFO]: TopUp attempt {"buyer_id":4,"post_data":{"amount":"2000000","_token":"b89ef135ece83da2da77c45c384e5896f4e8a8e32956b4f08cfee3aad406336b"}}
+[2025-11-02 14:18:34] [INFO]: TopUp success {"buyer_id":4,"amount":2000000,"new_balance":2075000}
+[2025-11-02 14:18:38] [INFO]: TopUp attempt {"buyer_id":4,"post_data":{"amount":"2000000","_token":"b89ef135ece83da2da77c45c384e5896f4e8a8e32956b4f08cfee3aad406336b"}}
+[2025-11-02 14:18:38] [INFO]: TopUp success {"buyer_id":4,"amount":2000000,"new_balance":4075000}
+[2025-11-02 14:20:42] [INFO]: TopUp attempt {"buyer_id":4,"post_data":{"amount":"500000","_token":"18c7ac9102100bc2eae20badb5d67c53b388f053f72e8e35925028190d78eacf"}}
+[2025-11-02 14:20:42] [INFO]: TopUp success {"buyer_id":4,"amount":500000,"new_balance":4575000}
+[2025-11-02 14:20:46] [INFO]: TopUp attempt {"buyer_id":4,"post_data":{"amount":"500000","_token":"18c7ac9102100bc2eae20badb5d67c53b388f053f72e8e35925028190d78eacf"}}
+[2025-11-02 14:20:47] [INFO]: TopUp success {"buyer_id":4,"amount":500000,"new_balance":5075000}
+[2025-11-02 14:27:04] [ERROR]: Rollback failed {"buyer_id":4,"rollback_error":"There is no active transaction"}
+[2025-11-02 14:27:04] [ERROR]: Checkout failed {"buyer_id":4,"error":"Total harga tidak cocok. Silakan ulangi checkout."}
+[2025-11-02 14:27:15] [ERROR]: Rollback failed {"buyer_id":4,"rollback_error":"There is no active transaction"}
+[2025-11-02 14:27:15] [ERROR]: Checkout failed {"buyer_id":4,"error":"Total harga tidak cocok. Silakan ulangi checkout."}
+[2025-11-02 14:28:36] [INFO]: Checkout successful {"buyer_id":4,"total_price":5010000}
+[2025-11-02 14:50:16] [INFO]: TopUp success {"buyer_id":4,"amount":50000,"new_balance":115000}
+[2025-11-02 14:50:21] [INFO]: Checkout successful {"buyer_id":4,"total_price":75000}
+[2025-11-02 14:56:09] [INFO]: Checkout successful {"buyer_id":4,"total_price":15000}
+[2025-11-03 02:47:46] [INFO]: TopUp success {"buyer_id":4,"amount":10000,"new_balance":35000}
+[2025-11-03 02:47:52] [INFO]: TopUp success {"buyer_id":4,"amount":25000,"new_balance":60000}
+[2025-11-03 02:50:10] [INFO]: TopUp success {"buyer_id":4,"amount":50000,"new_balance":110000}
+[2025-11-03 02:50:15] [INFO]: TopUp success {"buyer_id":4,"amount":200000,"new_balance":310000}
+[2025-11-03 02:50:20] [INFO]: Checkout successful {"buyer_id":4,"total_price":220000}
+[2025-11-04 03:53:05] [INFO]: TopUp success {"buyer_id":4,"amount":10000,"new_balance":110000}
+[2025-11-04 03:53:10] [INFO]: TopUp success {"buyer_id":4,"amount":10000,"new_balance":130000}
+[2025-11-04 03:53:35] [INFO]: TopUp success {"buyer_id":4,"amount":10000,"new_balance":140000}
+[2025-11-04 03:54:59] [INFO]: TopUp success {"buyer_id":4,"amount":100000000,"new_balance":100140000}
+[2025-11-04 03:55:34] [INFO]: TopUp success {"buyer_id":4,"amount":10000,"new_balance":100150000}
+[2025-11-04 04:14:05] [INFO]: Checkout successful {"buyer_id":4,"total_price":180000}
+[2025-11-04 04:41:36] [INFO]: Checkout successful {"buyer_id":4,"total_price":190000}
+[2025-11-04 04:41:36] [ERROR]: Checkout failed {"buyer_id":4,"error":"Keranjang kosong."}
+[2025-11-04 04:41:55] [INFO]: Checkout successful {"buyer_id":4,"total_price":35000}
+[2025-11-04 04:41:55] [ERROR]: Checkout failed {"buyer_id":4,"error":"Keranjang kosong."}
+[2025-11-04 06:58:16] [INFO]: Checkout successful {"buyer_id":4,"total_price":120000}
+[2025-11-04 06:58:16] [ERROR]: Checkout failed {"buyer_id":4,"error":"Keranjang kosong."}
+[2025-11-04 08:35:05] [ERROR]: Login failed {"email":"hasri@gmail.com","error":"Invalid email or password.","ip":"172.20.0.1"}
+[2025-11-04 09:28:02] [ERROR]: Login failed {"email":"hasri@gmail.com","error":"Invalid email or password.","ip":"172.20.0.1"}
+[2025-11-04 10:04:28] [INFO]: TopUp success {"buyer_id":1,"amount":10000,"new_balance":1010000}
+[2025-11-04 11:20:18] [ERROR]: Login failed {"email":"hasri@gmail.com","error":"Invalid email or password.","ip":"172.20.0.1"}
+[2025-11-04 11:52:05] [INFO]: TopUp success {"buyer_id":4,"amount":1000000,"new_balance":1000000}
+[2025-11-04 12:09:48] [INFO]: TopUp success {"buyer_id":4,"amount":10000,"new_balance":1010000}
+[2025-11-04 13:02:55] [INFO]: Checkout successful {"buyer_id":4,"total_price":450000}
+[2025-11-04 13:02:55] [ERROR]: Checkout failed {"buyer_id":4,"error":"Keranjang kosong."}
+[2025-11-04 13:12:42] [INFO]: Checkout successful {"buyer_id":4,"total_price":450000}
+[2025-11-04 13:12:42] [ERROR]: Checkout failed {"buyer_id":4,"error":"Keranjang kosong."}
+[2025-11-04 13:13:13] [INFO]: Checkout successful {"buyer_id":4,"total_price":60000}
+[2025-11-04 13:13:13] [ERROR]: Checkout failed {"buyer_id":4,"error":"Keranjang kosong."}
+[2025-11-04 16:57:00] [ERROR]: Login failed {"email":"farrel@gmail.com","error":"Invalid email or password.","ip":"172.20.0.1"}
+[2025-11-04 16:57:07] [ERROR]: Login failed {"email":"farrel@gmail.com","error":"Invalid email or password.","ip":"172.20.0.1"}

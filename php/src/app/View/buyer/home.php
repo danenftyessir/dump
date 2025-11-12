@@ -11,10 +11,12 @@ $isBuyer = $isBuyer ?? false;
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Product Discovery</title>
+    <link rel="stylesheet" href="/css/buyer/base.css">
     <link rel="stylesheet" href="/css/buyer/home.css">
     <link rel="stylesheet" href="/css/components/navbar-base.css">
     <link rel="stylesheet" href="/css/components/navbar-buyer.css">
     <link rel="stylesheet" href="/css/components/navbar-guest.css">
+    <link rel="stylesheet" href="/css/components/footer.css">
 </head>
 <body>
     <!-- navbar untuk buyer/guest -->
@@ -28,8 +30,8 @@ $isBuyer = $isBuyer ?? false;
     <section class="hero-section">
         <div class="hero-overlay"></div>
         <div class="hero-content">
-            <h1 class="hero-title">Temukan Produk Kerajinan Unik</h1>
-            <p class="hero-subtitle">Marketplace Produk Kerajinan Tangan Berkualitas Dari Seluruh Indonesia</p>
+            <h1 class="hero-title">Temukan Produk Yang Anda Inginkan</h1>
+            <p class="hero-subtitle">Nimonspedia adalah platform e-commerce berbasis web yang memungkinkan pengguna untuk berbelanja produk dari berbagai seller dan memungkinkan seller untuk mengelola toko online mereka</p>
             
             <!-- search bar utama -->
             <div class="hero-search-wrapper">
@@ -96,6 +98,16 @@ $isBuyer = $isBuyer ?? false;
                     </select>
                 </div>
 
+                <div class="filter-group">
+                    <label for="itemsPerPage" class="filter-label">Per Halaman:</label>
+                    <select id="itemsPerPage" class="filter-select">
+                        <option value="4">4 Produk</option>
+                        <option value="8">8 Produk</option>
+                        <option value="12" selected>12 Produk</option>
+                        <option value="20">20 Produk</option>
+                    </select>
+                </div>
+
                 <button class="btn-reset" onclick="resetFilters()">
                     Reset Filter
                 </button>
@@ -117,8 +129,24 @@ $isBuyer = $isBuyer ?? false;
 
             <!-- products grid -->
             <div id="productsGrid" class="products-grid" style="display: none;">
-                <!-- products akan diisi via JavaScript -->
+                <!-- JavaScript -->
             </div>
+
+            <!-- template untuk kartu produk -->
+            <template id="productCardTemplate">
+                <div class="product-card">
+                    <div class="product-image-wrapper">
+                        <img class="product-image" alt="">
+                        <span class="product-badge" style="display: none;"></span>
+                    </div>
+                    <div class="product-content">
+                        <h3 class="product-name"></h3>
+                        <p class="product-store"></p>
+                        <p class="product-price"></p>
+                        <p class="product-stock"></p>
+                    </div>
+                </div>
+            </template>
 
             <!-- empty state -->
             <div id="emptyState" class="empty-state" style="display: none;">
@@ -129,45 +157,22 @@ $isBuyer = $isBuyer ?? false;
 
             <!-- pagination -->
             <div id="paginationContainer" class="pagination-container" style="display: none;">
-                <button id="btnPrevPage" class="pagination-btn" onclick="changePage('prev')">
+                <button id="btnPrevPage" class="pagination-btn">
                     <span>Sebelumnya</span>
                 </button>
                 
                 <div id="paginationNumbers" class="pagination-numbers">
-                    <!-- nomor halaman akan diisi via JavaScript -->
+                    <!-- JavaScript -->
                 </div>
                 
-                <button id="btnNextPage" class="pagination-btn" onclick="changePage('next')">
+                <button id="btnNextPage" class="pagination-btn">
                     <span>Selanjutnya</span>
                 </button>
             </div>
         </section>
     </div>
 
-    <!-- footer -->
-    <footer class="footer-section">
-        <div class="footer-content">
-            <div class="footer-brand">
-                <h3>Nimonspedia</h3>
-                <p>Marketplace Produk Kerajinan Berkualitas</p>
-            </div>
-            <div class="footer-links">
-                <div class="footer-column">
-                    <h4>Tentang</h4>
-                    <a href="#">Tentang Kami</a>
-                    <a href="#">Kontak</a>
-                </div>
-                <div class="footer-column">
-                    <h4>Bantuan</h4>
-                    <a href="#">Cara Berbelanja</a>
-                    <a href="#">FAQ</a>
-                </div>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            <p>&copy; 2025 Nimonspedia. Semua Hak Dilindungi.</p>
-        </div>
-    </footer>
+    <?php include __DIR__ . '/../components/footer.php'; ?>
 
     <!-- JavaScript -->
     <script src="/js/buyer/home.js"></script>

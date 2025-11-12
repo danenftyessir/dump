@@ -8,15 +8,14 @@ document.addEventListener('DOMContentLoaded', function() {
     if (userDropdownToggle && userDropdownMenu) {
         userDropdownToggle.addEventListener('click', function(event) {
             event.stopPropagation();
-            const isHidden = userDropdownMenu.style.display === 'none' || userDropdownMenu.style.display === '';
-            userDropdownMenu.style.display = isHidden ? 'block' : 'none';
+            userDropdownMenu.classList.toggle('show');
         });
     }
     
     // close dropdown
     document.addEventListener('click', function(event) {
         if (userWrapper && !userWrapper.contains(event.target) && userDropdownMenu) {
-            userDropdownMenu.style.display = 'none';
+            userDropdownMenu.classList.remove('show');
         }
     });
 

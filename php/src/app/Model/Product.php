@@ -38,9 +38,8 @@ class Product extends Model
 
         $bindings = [];
         
-        // filter search - FIX: Case-insensitive search using LOWER()
         if (!empty($filters['search'])) {
-            $sql .= " AND (LOWER(p.product_name) LIKE LOWER(:search) OR LOWER(p.description) LIKE LOWER(:search) OR LOWER(p.search_cache) LIKE LOWER(:search))";
+            $sql .= " AND (LOWER(p.product_name) LIKE LOWER(:search) OR LOWER(p.description) LIKE LOWER(:search))";
             $bindings[':search'] = '%' . $filters['search'] . '%';
         }
         
@@ -79,11 +78,21 @@ class Product extends Model
                      WHERE p.deleted_at IS NULL";
         
         // terapkan filter yang sama ke count query
-        if (!empty($filters['search'])) $countSql .= $bindings[':search'] ? " AND (p.product_name LIKE :search OR p.description LIKE :search)" : "";
-        if (!empty($filters['category_id'])) $countSql .= $bindings[':category_id'] ? " AND EXISTS (SELECT 1 FROM category_items ci WHERE ci.product_id = p.product_id AND ci.category_id = :category_id)" : "";
-        if (!empty($filters['store_id'])) $countSql .= $bindings[':store_id'] ? " AND p.store_id = :store_id" : "";
-        if (!empty($filters['min_price'])) $countSql .= $bindings[':min_price'] ? " AND p.price >= :min_price" : "";
-        if (!empty($filters['max_price'])) $countSql .= $bindings[':max_price'] ? " AND p.price <= :max_price" : "";
+        if (!empty($filters['search'])) {
+            $countSql .= " AND (LOWER(p.product_name) LIKE LOWER(:search) OR LOWER(p.description) LIKE LOWER(:search))";
+        }
+        if (!empty($filters['category_id'])) {
+            $countSql .= " AND EXISTS (SELECT 1 FROM category_items ci WHERE ci.product_id = p.product_id AND ci.category_id = :category_id)";
+        }
+        if (!empty($filters['store_id'])) {
+            $countSql .= " AND p.store_id = :store_id";
+        }
+        if (!empty($filters['min_price'])) {
+            $countSql .= " AND p.price >= :min_price";
+        }
+        if (!empty($filters['max_price'])) {
+            $countSql .= " AND p.price <= :max_price";
+        }
 
         $countStmt = $this->db->prepare($countSql);
         $countStmt->execute($bindings);
@@ -226,9 +235,8 @@ class Product extends Model
         $sql = "SELECT p.* FROM {$this->table} p WHERE p.store_id = :store_id AND p.deleted_at IS NULL";
         $bindings = [':store_id' => $storeId];
         
-        // filter search - FIX: Case-insensitive search using LOWER()
         if (!empty($filters['search'])) {
-            $sql .= " AND (LOWER(p.product_name) LIKE LOWER(:search) OR LOWER(p.description) LIKE LOWER(:search) OR LOWER(p.search_cache) LIKE LOWER(:search))";
+            $sql .= " AND (LOWER(p.product_name) LIKE LOWER(:search) OR LOWER(p.description) LIKE LOWER(:search))";
             $bindings[':search'] = '%' . $filters['search'] . '%';
         }
         
@@ -359,12 +367,11 @@ class Product extends Model
             $amountAbs = abs($quantity);
             
             $sql = "UPDATE {$this->table}
-                    SET stock = stock + :quantity
+                    SET stock = stock - :amount_abs
                     WHERE {$this->primaryKey} = :product_id AND stock >= :amount_abs";
             
             $stmt = $this->db->prepare($sql);
             $stmt->bindValue(':amount_abs', $amountAbs, PDO::PARAM_INT);
-            $stmt->bindValue(':quantity', $quantity, PDO::PARAM_INT);
             $stmt->bindValue(':product_id', $productId, PDO::PARAM_INT);
 
             $stmt->execute();
@@ -438,5 +445,27 @@ class Product extends Model
         $stmt->execute();
         
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // Get product suggestions for search autocomplete
+    public function getProductSuggestions($keyword, $limit = 10) {
+        if (strlen($keyword) < 2) {
+            return [];
+        }
+
+        $sql = "SELECT DISTINCT product_name 
+                FROM products 
+                WHERE product_name ILIKE :keyword 
+                AND stock > 0
+                AND deleted_at IS NULL
+                ORDER BY product_name ASC 
+                LIMIT :limit";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':keyword', '%' . $keyword . '%');
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
     }
 }

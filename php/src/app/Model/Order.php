@@ -216,7 +216,15 @@ class Order extends Model
         $totalItems = (int)$countStmt->fetch(PDO::FETCH_ASSOC)['total'];
         
         // sorting
-        $sql .= " ORDER BY o.created_at DESC";
+        $sortBy = $filters['sort_by'] ?? 'created_at';
+        $sortOrder = strtoupper($filters['sort_order'] ?? 'DESC');
+        
+        // Validate sort order 
+        if (!in_array($sortOrder, ['ASC', 'DESC'])) {
+            $sortOrder = 'DESC';
+        }
+        
+        $sql .= " ORDER BY o.{$sortBy} {$sortOrder}";
         
         // pagination
         $page = max(1, (int)($filters['page'] ?? 1));
@@ -235,6 +243,28 @@ class Order extends Model
         $stmt->execute();
         $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
+        // get items untuk setiap order
+        foreach ($orders as &$order) {
+            $itemsSql = "SELECT 
+                            oi.*,
+                            p.product_name,
+                            p.main_image_path
+                        FROM order_items oi
+                        JOIN products p ON oi.product_id = p.product_id
+                        WHERE oi.order_id = :order_id
+                        ORDER BY oi.order_item_id";
+            
+            $itemsStmt = $this->db->prepare($itemsSql);
+            $itemsStmt->bindValue(':order_id', $order['order_id'], PDO::PARAM_INT);
+            $itemsStmt->execute();
+            
+            $order['items'] = $itemsStmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // add item count untuk display
+            $order['item_count'] = count($order['items']);
+        }
+        unset($order); // break reference
+        
         $totalPages = ceil($totalItems / $limit);
         
         return [
@@ -248,6 +278,41 @@ class Order extends Model
                 'has_prev' => $page > 1
             ]
         ];
+    }
+
+    // get counts untuk status order (untuk tab filter)
+    public function getOrderStatusCounts($buyerId) {
+        $sql = "SELECT 
+                    status,
+                    COUNT(*) as count
+                FROM {$this->table}
+                WHERE buyer_id = :buyer_id
+                GROUP BY status";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':buyer_id', $buyerId, PDO::PARAM_INT);
+        $stmt->execute();
+        
+        $counts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // format untuk mudah digunakan di view
+        $statusCounts = [
+            'all' => 0,
+            'waiting_approval' => 0,
+            'approved' => 0,
+            'on_delivery' => 0,
+            'received' => 0,
+            'rejected' => 0
+        ];
+        
+        $total = 0;
+        foreach ($counts as $count) {
+            $statusCounts[$count['status']] = (int)$count['count'];
+            $total += (int)$count['count'];
+        }
+        $statusCounts['all'] = $total;
+        
+        return $statusCounts;
     }
 
     // get order detail dengan items
@@ -571,6 +636,51 @@ class Order extends Model
         $stmt = $this->db->prepare("SELECT * FROM orders WHERE order_id = :order_id");
         $stmt->execute(['order_id' => $orderId]);
         return $stmt->fetch(\PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * mendapatkan detail pesanan dengan items untuk buyer
+     */
+    public function getOrderDetailForBuyer($orderId, $buyerId)
+    {
+        // Get order with store info
+        $stmt = $this->db->prepare("
+            SELECT
+                o.*,
+                s.store_name,
+                s.store_logo_path,
+                u.name as buyer_name,
+                u.email as buyer_email
+            FROM orders o
+            INNER JOIN stores s ON o.store_id = s.store_id
+            INNER JOIN users u ON o.buyer_id = u.user_id
+            WHERE o.order_id = :order_id AND o.buyer_id = :buyer_id
+        ");
+        $stmt->execute([
+            'order_id' => $orderId,
+            'buyer_id' => $buyerId
+        ]);
+
+        $order = $stmt->fetch(\PDO::FETCH_ASSOC);
+        if (!$order) {
+            return null;
+        }
+
+        // Get order items
+        $stmt = $this->db->prepare("
+            SELECT
+                oi.*,
+                p.product_name,
+                p.main_image_path
+            FROM order_items oi
+            INNER JOIN products p ON oi.product_id = p.product_id
+            WHERE oi.order_id = :order_id
+        ");
+        $stmt->execute(['order_id' => $orderId]);
+
+        $order['items'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+        return $order;
     }
 
     /**

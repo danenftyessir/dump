@@ -42,3 +42,20 @@
         font-size: 0.875rem;
     }
 }
+
+/* Responsive for 400px and below */
+@media (max-width: 400px) {
+    .navbar-actions {
+        gap: 8px;
+    }
+    
+    .btn-login,
+    .btn-register {
+        padding: 6px 12px;
+        font-size: 0.75rem;
+    }
+    
+    .btn-register {
+        min-width: auto;
+    }
+}

@@ -25,9 +25,14 @@ $productCategoryIds = array_column($productCategories, 'category_id');
     <link rel="stylesheet" href="/css/seller/seller-product-form.css">
     <link rel="stylesheet" href="/css/seller/seller-common.css">
 
+<<<<<<< HEAD
     <!-- Quill editor CSS v2.0.2 - defer loading dengan media print trick -->
     <link rel="preload" href="https://cdn.quilljs.com/2.0.2/quill.snow.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="https://cdn.quilljs.com/2.0.2/quill.snow.css"></noscript>
+=======
+    <!-- Quill editor CSS v1.3.7 - versi stabil -->
+    <link rel="stylesheet" href="https://cdn.quilljs.com/1.3.7/quill.snow.css">
+>>>>>>> origin/master
 </head>
 <body>
     <!-- navbar seller -->
@@ -254,8 +259,18 @@ $productCategoryIds = array_column($productCategories, 'category_id');
         </div>
     </div>
 
+<<<<<<< HEAD
     <!-- quill editor library v2.0.2 - defer untuk performa -->
     <script src="https://cdn.quilljs.com/2.0.2/quill.js" defer></script>
     <script src="/js/seller/seller-product-edit.js?v=<?= time() ?>" defer></script>
+=======
+    <!-- quill editor library v1.3.7 - versi stabil -->
+    <script>
+        // Flag untuk memastikan Quill loaded
+        window.quillLoaded = false;
+    </script>
+    <script src="https://cdn.quilljs.com/1.3.7/quill.js" onload="window.quillLoaded = true;" onerror="console.error('Failed to load Quill.js from CDN');"></script>
+    <script src="/js/seller/seller-product-edit.js?v=<?= time() ?>"></script>
+>>>>>>> origin/master
 </body>
 </html>

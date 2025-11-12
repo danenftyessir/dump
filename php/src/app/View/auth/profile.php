@@ -14,26 +14,23 @@ $oldInput = $oldInput ?? [];
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Profile</title>
+    <title>Profile - Nimonspedia</title>
     <link rel="stylesheet" href="/css/auth/profile.css" />
-    <link rel="stylesheet" href="/css/icons.css">
+    <link rel="stylesheet" href="/css/buyer/base.css" />
+    <link rel="stylesheet" href="/css/components/navbar-base.css" />
+    <link rel="stylesheet" href="/css/components/navbar-buyer.css" />
+    <link rel="stylesheet" href="/css/components/toast.css" />
+    <link rel="stylesheet" href="/css/components/footer.css" />
 </head>
 <body>
+    <?php include __DIR__ . '/../components/navbar-buyer.php'; ?>
     
-    <div class="profile-container">
+    <div class="main-content" 
+         <?php if (!empty($successMessage)): ?>data-success-message="<?php echo htmlspecialchars($successMessage); ?>"<?php endif; ?>
+         <?php if (!empty($errorMessage)): ?>data-error-message="<?php echo htmlspecialchars($errorMessage); ?>"<?php endif; ?>>
+        <div class="container">
+            <div class="profile-container">
         <h1>Profile Saya</h1>
-
-        <?php if (!empty($successMessage)): ?>
-            <div class="alert alert-success">
-                <?php echo htmlspecialchars($successMessage); ?>
-            </div>
-        <?php endif; ?>
-        
-        <?php if (!empty($errorMessage)): ?>
-            <div class="alert alert-danger">
-                <?php echo htmlspecialchars($errorMessage); ?>
-            </div>
-        <?php endif; ?>
 
         <div class="profile-box">
             <h2>Form Edit Profile</h2>
@@ -69,12 +66,21 @@ $oldInput = $oldInput ?? [];
             </form>
         </div>
 
-        <p style="text-align: center; margin-top: 20px;">
-            <a href="/profile/password">Ubah Password Anda</a>
-        </p>
+            <p class="link-center">
+                <a href="/profile/password">Ubah Password Anda</a>
+            </p>
 
+            </div>
+        </div>
     </div>
 
+    <?php include __DIR__ . '/../components/footer.php'; ?>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="/js/components/toast.js"></script>
     <script src="/js/auth/profile.js"></script>
+    <script src="/js/components/navbar-buyer.js"></script>
 </body>
 </html>

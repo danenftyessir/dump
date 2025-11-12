@@ -15,31 +15,7 @@ $oldInput = $oldInput ?? [];
     <title>Register</title>
     <link rel="stylesheet" href="/css/auth/register.css">
     <link rel="stylesheet" href="/css/icons.css">
-    <!-- Include Quill stylesheet -->
     <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet" />
-    <style>
-        /* Quill editor styling */
-        #editor-container {
-            background-color: white;
-            min-height: 150px;
-        }
-        
-        #editor-container .ql-editor {
-            background-color: white;
-            min-height: 150px;
-        }
-        
-        .ql-toolbar.ql-snow {
-            background-color: #f8f9fa;
-            border: 1px solid #ced4da;
-            border-bottom: none;
-        }
-        
-        .ql-container.ql-snow {
-            background-color: white;
-            border: 1px solid #ced4da;
-        }
-    </style>
 </head>
 <body>
     <div class="register-container">
@@ -50,7 +26,10 @@ $oldInput = $oldInput ?? [];
                 <h2>INFORMASI AKUN</h2>
                 
                 <div class="avatar-placeholder">
-                    <span class="icon icon-user icon-2xl"></span>
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
                 </div>
 
                 <!-- Registration Form (email, password, role) -->
@@ -67,12 +46,17 @@ $oldInput = $oldInput ?? [];
                     </div>
 
                     <div class="input-group password-group">
-                        <label for="password">Kata Sandi</label>
+                        <label for="password">Password</label>
                         
                         <div class="input-icon-wrapper">
                             <input type="password" id="password" name="password" placeholder="Minimal 8 karakter" required
                                 class="<?php echo isset($errors['password']) ? 'is-invalid' : ''; ?>">
-                            <span class="icon icon-eye password-toggle" id="passwordToggleIcon" onclick="togglePassword('password', 'passwordToggleIcon')"></span>
+                            <button type="button" class="password-toggle" id="passwordToggleIcon" onclick="togglePassword('password', 'passwordToggleIcon')">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                            </button>
                         </div>
                         <?php if (isset($errors['password'])): ?>
                             <span class="error-message"><?php echo htmlspecialchars($errors['password']); ?></span>
@@ -80,11 +64,16 @@ $oldInput = $oldInput ?? [];
                     </div>
 
                     <div class="input-group password-group">
-                        <label for="password_confirm">Konfirmasi Kata Sandi</label>
+                        <label for="password_confirm">Konfirmasi Password</label>
                         <div class="input-icon-wrapper">
-                            <input type="password" id="password_confirm" name="password_confirm" placeholder="Ulangi Kata Sandi" required
+                            <input type="password" id="password_confirm" name="password_confirm" placeholder="Ulangi Password" required
                                 class="<?php echo isset($errors['password_confirm']) ? 'is-invalid' : ''; ?>">
-                            <span class="icon icon-eye password-toggle" id="confirmPasswordToggleIcon" onclick="togglePassword('password_confirm', 'confirmPasswordToggleIcon')"></span>
+                            <button type="button" class="password-toggle" id="confirmPasswordToggleIcon" onclick="togglePassword('password_confirm', 'confirmPasswordToggleIcon')">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                            </button>
                         </div>
                         <?php if (isset($errors['password_confirm'])): ?>
                             <span class="error-message"><?php echo htmlspecialchars($errors['password_confirm']); ?></span>
@@ -138,7 +127,7 @@ $oldInput = $oldInput ?? [];
                          <textarea id="address" name="address" placeholder="Masukkan Alamat" required><?php echo htmlspecialchars($oldInput['address'] ?? ''); ?></textarea>
                     </div>
 
-                    <fieldset id="sellerFields" style="display: none; border: none; padding: 0; margin: 0; margin-top: 20px; border-top: 1px dashed #6c757d; padding-top: 20px;">
+                    <fieldset id="sellerFields" class="seller-fields-section">
 
                         <div class="input-group">
                             <label for="store_name">Nama Toko</label>
@@ -153,11 +142,11 @@ $oldInput = $oldInput ?? [];
                                 $storeDesc = $oldInput['store_description'] ?? '';
                                 ?>
                             </div>
-                            <textarea id="store_description" name="store_description" style="display:none;"><?php echo htmlspecialchars($oldInput['store_description'] ?? ''); ?></textarea>
+                            <textarea id="store_description" name="store_description" class="hidden-textarea"><?php echo htmlspecialchars($oldInput['store_description'] ?? ''); ?></textarea>
                             </div>
 
                         <div class="input-group">
-                             <label for="store_logo">Upload Logo Toko (Opsional, Max 2MB)</label>
+                             <label for="store_logo">Upload Logo Toko</label>
                              <input type="file" id="store_logo" name="store_logo" accept="image/jpeg, image/png, image/webp">
                              </div>
                     </fieldset>
@@ -170,41 +159,6 @@ $oldInput = $oldInput ?? [];
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
-    
     <script src="/js/auth/register.js"></script>
-
-    <script>
-        let quill = null;
-        
-        function initQuill() {
-            if (!quill) {
-                quill = new Quill('#editor-container', {
-                    theme: 'snow',
-                    placeholder: 'Deskripsi Toko Anda'
-                });
-                
-
-                quill.on('text-change', function() {
-                    document.getElementById('store_description').value = quill.root.innerHTML;
-                });
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            const sellerRadio = document.getElementById('role_seller');
-            if (sellerRadio && sellerRadio.checked) {
-                initQuill();
-            }
-            
-            const roleRadios = document.querySelectorAll('input[name="role"]');
-            roleRadios.forEach(function(radio) {
-                radio.addEventListener('change', function() {
-                    if (this.value === 'SELLER') {
-                        setTimeout(initQuill, 100);
-                    }
-                });
-            });
-        });
-    </script>
 </body>
 </html>

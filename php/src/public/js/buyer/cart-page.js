@@ -23,12 +23,10 @@ function updateQuantity(cartItemId, change) {
 
     if (newQty < 1 || newQty > maxStock) return;
 
-    // Optimistic UI update
     input.value = newQty;
     updateButtonStates(cartItem, newQty, maxStock);
     cartItem.classList.add('updating');
 
-    // Debounce the API call
     clearTimeout(updateTimeout);
     updateTimeout = setTimeout(() => {
         sendQuantityUpdate(cartItemId, newQty, cartItem);
@@ -64,37 +62,41 @@ function updateQuantityDirect(cartItemId, value) {
 
 // Send quantity update to server
 function sendQuantityUpdate(cartItemId, quantity, cartItem) {
-    const formData = new FormData();
-    formData.append('_token', CSRF_TOKEN);
-    formData.append('quantity', quantity);
-
-    fetch(`/cart/update/${cartItemId}`, {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Update UI
-            updateCartDisplay(data);
-            updateTotalPrice(data.data.total_price)
-            cartItem.classList.remove('updating');
-            
-            // Update original value
-            const input = cartItem.querySelector('.qty-input');
-            input.dataset.original = quantity;
-        } else {
-            throw new Error(data.message || 'Gagal update quantity');
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/cart/update', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+            if (xhr.status === 200) {
+                const data = JSON.parse(xhr.responseText);
+                if (data.success) {
+                    updateCartDisplay(data.data);
+                    cartItem.classList.remove('updating');
+                    
+                    const input = cartItem.querySelector('.qty-input');
+                    input.dataset.original = quantity;
+                } else {
+                    cartItem.classList.remove('updating');
+                    showToast(data.message || 'Gagal update quantity', 'error');
+                    
+                    // Revert to original
+                    const input = cartItem.querySelector('.qty-input');
+                    input.value = input.dataset.original;
+                }
+            } else {
+                cartItem.classList.remove('updating');
+                showToast('Gagal update quantity', 'error');
+                
+                // Revert to original
+                const input = cartItem.querySelector('.qty-input');
+                input.value = input.dataset.original;
+            }
         }
-    })
-    .catch(error => {
-        cartItem.classList.remove('updating');
-        showToast(error.message, 'error');
-        
-        // Revert to original
-        const input = cartItem.querySelector('.qty-input');
-        input.value = input.dataset.original;
-    });
+    };
+    
+    const params = `_token=${encodeURIComponent(CSRF_TOKEN)}&cart_item_id=${encodeURIComponent(cartItemId)}&quantity=${encodeURIComponent(quantity)}`;
+    xhr.send(params);
 }
 
 // Update button states
@@ -130,45 +132,46 @@ function removeItem() {
         return;
     }
 
-    // Save to local variable BEFORE closeModal resets it to null
     const cartItemId = itemToRemove;
     
     closeModal();
     showLoading();
-
-    const formData = new FormData();
-    formData.append('_token', CSRF_TOKEN);
     
-    console.log('Sending DELETE request to:', `/cart/remove/${cartItemId}`);
+    console.log('Sending DELETE request to:', `/api/cart/remove/${cartItemId}`);
 
-    fetch(`/cart/remove/${cartItemId}`, {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        hideLoading();
-        
-        if (data.success) {
-            showToast('Item berhasil dihapus');
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `/api/cart/remove/${cartItemId}`, true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+            hideLoading();
             
-            // Remove item from DOM with animation
-            const cartItem = document.querySelector(`[data-cart-id="${cartItemId}"]`);
-            cartItem.style.opacity = '0';
-            cartItem.style.transform = 'translateX(-100%)';
-            
-            setTimeout(() => {
-                // Reload page to update all totals
-                location.reload();
-            }, 300);
-        } else {
-            showToast(data.message || 'Gagal menghapus item', 'error');
+            if (xhr.status === 200) {
+                const data = JSON.parse(xhr.responseText);
+                if (data.success) {
+                    showToast('Item berhasil dihapus');
+                    
+                    // Remove item from DOM with animation
+                    const cartItem = document.querySelector(`[data-cart-id="${cartItemId}"]`);
+                    cartItem.style.opacity = '0';
+                    cartItem.style.transform = 'translateX(-100%)';
+                    
+                    setTimeout(() => {
+                        // Reload page to update all totals
+                        location.reload();
+                    }, 300);
+                } else {
+                    showToast(data.message || 'Gagal menghapus item', 'error');
+                }
+            } else {
+                showToast('Gagal menghapus item', 'error');
+            }
         }
-    })
-    .catch(error => {
-        hideLoading();
-        showToast('Terjadi kesalahan', 'error');
-    });
+    };
+    
+    const params = `_token=${encodeURIComponent(CSRF_TOKEN)}`;
+    xhr.send(params);
 }
 
 // Checkout
@@ -180,27 +183,41 @@ function checkout() {
 function updateCartDisplay(data) {
     if (data.cartSummary) {
         // Update badge
-        document.getElementById('cartBadge').textContent = `${data.cartSummary.total_items} Item`;
-        document.getElementById('totalItemsDisplay').textContent = `${data.cartSummary.total_items} item`;
+        const badge = document.getElementById('cartBadge');
+        if (badge) {
+            badge.textContent = `${data.cartSummary.total_items_quantity} Item`;
+        }
+        
+        const totalDisplay = document.getElementById('totalItemsDisplay');
+        if (totalDisplay) {
+            totalDisplay.textContent = `${data.cartSummary.total_items_quantity} item`;
+        }
         
         // Update grand total
-        document.getElementById('grandTotal').textContent = 
-            `Rp ${data.cartSummary.total_price.toLocaleString('id-ID')}`;
+        const grandTotal = document.getElementById('grandTotal');
+        if (grandTotal) {
+            grandTotal.textContent = `Rp ${data.cartSummary.grand_total.toLocaleString('id-ID')}`;
+        }
         
-        // Update item subtotal
+        // Update item subtotal if available
         if (data.item_subtotal && data.cart_item_id) {
             const cartItem = document.querySelector(`[data-cart-id="${data.cart_item_id}"]`);
             if (cartItem) {
                 const subtotalEl = cartItem.querySelector('.item-subtotal');
-                subtotalEl.textContent = `Rp ${data.item_subtotal.toLocaleString('id-ID')}`;
+                if (subtotalEl) {
+                    subtotalEl.textContent = `Rp ${data.item_subtotal.toLocaleString('id-ID')}`;
+                }
             }
         }
-    }
-}
-function updateTotalPrice(newTotalPrice) {
-    const grandTotalElement = document.querySelector('.summary-row.total .total-price');
-    if (grandTotalElement) {
-        grandTotalElement.textContent = formatRupiah(newTotalPrice);
+        
+        // Update store subtotals
+        Object.keys(data.cartSummary.stores).forEach(storeId => {
+            const store = data.cartSummary.stores[storeId];
+            const storeSubtotalEl = document.querySelector(`[data-store-id="${storeId}"] .store-subtotal-value`);
+            if (storeSubtotalEl) {
+                storeSubtotalEl.textContent = `Rp ${store.subtotal.toLocaleString('id-ID')}`;
+            }
+        });
     }
 }
 
@@ -257,7 +274,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Check if cart_item_id is null or undefined
         if (!cartId || cartId === 'null' || cartId === '') {
-            console.error(`⚠️ PROBLEM FOUND: Item ${index + 1} has invalid cart_item_id:`, cartId);
+            console.error(`PROBLEM FOUND: Item ${index + 1} has invalid cart_item_id:`, cartId);
         }
     });
     console.log('=== Total cart items:', cartItems.length, '===');

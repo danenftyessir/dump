@@ -1,3 +1,294 @@
+// State management
+let currentStatus = '';
+let currentSort = 'desc';
+
+// Initialize from URL params on page load
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.has('status')) {
+    currentStatus = urlParams.get('status');
+}
+if (urlParams.has('sort')) {
+    currentSort = urlParams.get('sort');
+}
+
+function getCsrfToken() {
+    const metaTag = document.querySelector('meta[name="csrf-token"]');
+    return metaTag ? metaTag.getAttribute('content') : '';
+}
+
+// Initialize event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    initializeFilters();
+    initializeSortControl();
+    updateActiveTab();
+    updateSortSelect();
+});
+
+function updateActiveTab() {
+    const filterTabs = document.querySelectorAll('.filter-tab');
+    filterTabs.forEach(tab => {
+        const tabStatus = tab.getAttribute('data-status') || '';
+        if (tabStatus === currentStatus) {
+            tab.classList.add('active');
+        } else {
+            tab.classList.remove('active');
+        }
+    });
+}
+
+function updateSortSelect() {
+    const sortSelect = document.getElementById('sortOrder');
+    if (sortSelect) {
+        sortSelect.value = currentSort;
+    }
+}
+
+function initializeFilters() {
+    const filterTabs = document.querySelectorAll('.filter-tab');
+    filterTabs.forEach(tab => {
+        tab.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Remove active class from all tabs
+            filterTabs.forEach(t => t.classList.remove('active'));
+            
+            // Add active class to clicked tab
+            this.classList.add('active');
+            
+            // Get status from data attribute
+            currentStatus = this.getAttribute('data-status') || '';
+            
+            // Load orders with new filter
+            loadOrders();
+            
+            return false;
+        });
+    });
+}
+
+function initializeSortControl() {
+    const sortSelect = document.getElementById('sortOrder');
+    if (sortSelect) {
+        sortSelect.addEventListener('change', function() {
+            currentSort = this.value;
+            loadOrders();
+        });
+    }
+}
+
+function loadOrders() {
+    showLoading();
+    
+    // Build query params
+    const params = new URLSearchParams();
+    if (currentStatus && currentStatus !== 'all') {
+        params.append('status', currentStatus);
+    }
+    params.append('sort', currentSort);
+    
+    console.log('Loading orders with params:', { status: currentStatus, sort: currentSort });
+    
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', `/orders?${params.toString()}`, true);
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    xhr.setRequestHeader('Accept', 'application/json');
+    
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+            hideLoading();
+            
+            if (xhr.status === 200) {
+                try {
+                    const data = JSON.parse(xhr.responseText);
+                    console.log('Received data:', data);
+                    
+                    if (data.success) {
+                        console.log('Rendering', data.orders.length, 'orders');
+                        renderOrders(data.orders);
+                    } else {
+                        Toast.error('Error!', data.message || 'Gagal memuat data orders');
+                    }
+                } catch (e) {
+                    console.error('JSON Parse Error:', e);
+                    Toast.error('Error!', 'Terjadi kesalahan saat memproses data');
+                }
+            } else {
+                console.error('HTTP error! status:', xhr.status);
+                Toast.error('Error!', 'Terjadi kesalahan saat memuat data');
+            }
+        }
+    };
+    
+    xhr.onerror = function() {
+        hideLoading();
+        console.error('Network error occurred');
+        Toast.error('Error!', 'Terjadi kesalahan jaringan');
+    };
+    
+    xhr.send();
+}
+
+function renderOrders(orders) {
+    const container = document.getElementById('ordersContainer');
+    
+    if (!orders || orders.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="8" cy="21" r="1"/>
+                            <circle cx="19" cy="21" r="1"/>
+                            <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>
+                        </svg>
+                </div>
+                <h3>Belum Ada Pesanan</h3>
+                <p>Anda belum memiliki riwayat pesanan. Mulai belanja sekarang!</p>
+                <a href="/products" class="btn-shop">Mulai Belanja</a>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    orders.forEach(order => {
+        html += renderOrderCard(order);
+    });
+    
+    container.innerHTML = html;
+}
+
+function renderOrderCard(order) {
+    const statusText = {
+        'waiting_approval': 'Waiting Approval',
+        'approved': 'Approved',
+        'on_delivery': 'On Delivery',
+        'received': 'Received',
+        'rejected': 'Rejected'
+    };
+    
+    let isDeliveryOverdue = false;
+    if (order.status === 'on_delivery' && order.delivery_time) {
+        const deliveryTime = new Date(order.delivery_time).getTime();
+        isDeliveryOverdue = Date.now() > deliveryTime;
+    }
+    
+    let itemsHtml = '';
+    if (order.items && order.items.length > 0) {
+        order.items.forEach(item => {
+            itemsHtml += `
+                <div class="order-item">
+                    <img 
+                        src="${escapeHtml(item.main_image_path || '/asset/images/default-product.svg')}" 
+                        alt="Product"
+                        class="item-thumbnail"
+                        onerror="this.src='/asset/images/default-product.svg'"
+                    >
+                    <div class="item-details">
+                        <div class="item-name">${escapeHtml(item.product_name)}</div>
+                        <div class="item-quantity">Qty: ${item.quantity} × Rp ${formatRupiah(item.price_at_order)}</div>
+                    </div>
+                    <div class="item-price">
+                        Rp ${formatRupiah(item.subtotal)}
+                    </div>
+                </div>
+            `;
+        });
+    } else {
+        itemsHtml = `
+            <div class="order-item">
+                <div class="item-details">
+                    <div class="item-name">Tidak ada item dalam pesanan ini</div>
+                </div>
+            </div>
+        `;
+    }
+    
+    let refundInfoHtml = '';
+    if (order.status === 'rejected') {
+        refundInfoHtml = `
+            <div class="refund-info">
+                <div class="refund-amount">
+                    Dana Dikembalikan: Rp ${formatRupiah(order.total_price)}
+                </div>
+                <div class="refund-reason">
+                    <strong>Alasan Penolakan:</strong><br>
+                    ${escapeHtml(order.reject_reason || 'Tidak ada alasan yang diberikan')}
+                </div>
+            </div>
+        `;
+    }
+    
+    let deliveryAlertHtml = '';
+    if (isDeliveryOverdue) {
+        deliveryAlertHtml = `
+            <div class="delivery-alert">
+                <strong>Waktu Pengiriman Terlampaui</strong><br>
+                Estimasi pengiriman: ${formatDate(order.delivery_time)}<br>
+                Silakan konfirmasi jika barang sudah diterima.
+            </div>
+        `;
+    }
+    
+    let confirmButtonHtml = '';
+    if (isDeliveryOverdue) {
+        confirmButtonHtml = `
+            <button class="btn btn-confirm" onclick="confirmDelivery(${order.order_id})">
+                Konfirmasi Diterima
+            </button>
+        `;
+    }
+    
+    return `
+        <div class="order-card">
+            <!-- Order Header -->
+            <div class="order-header">
+                <div class="order-meta">
+                    <span class="order-id">Order #${order.order_id}</span>
+                    <span class="order-date">
+                        ${formatDate(order.created_at)}
+                    </span>
+                </div>
+                <span class="status-badge status-${order.status}">
+                    ${statusText[order.status] || order.status}
+                </span>
+            </div>
+
+            <!-- Store Info -->
+            <div class="store-info">
+                <img 
+                    src="${escapeHtml(order.store_logo_path || '/asset/images/default-store.svg')}" 
+                    alt="Store Logo"
+                    class="store-logo"
+                    onerror="this.src='/asset/images/default-store.svg'"
+                >
+                <span class="store-name">${escapeHtml(order.store_name)}</span>
+            </div>
+
+            <!-- Order Items -->
+            <div class="order-items">
+                ${itemsHtml}
+            </div>
+
+            ${refundInfoHtml}
+            ${deliveryAlertHtml}
+
+            <!-- Order Footer -->
+            <div class="order-footer">
+                <div class="order-total">
+                    Total: <span class="total-amount">Rp ${formatRupiah(order.total_price)}</span>
+                </div>
+                <div class="order-actions">
+                    <button class="btn btn-detail" onclick='showOrderDetail(${JSON.stringify(order).replace(/'/g, "&apos;")})'>
+                        Detail Order
+                    </button>
+                    ${confirmButtonHtml}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 function showOrderDetail(order) {
     const statusText = {
         'waiting_approval': 'Waiting Approval',
@@ -11,8 +302,9 @@ function showOrderDetail(order) {
     order.items.forEach(item => {
         itemsHtml += `
             <div class="order-item">
-                <img src="${item.main_image_path || 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'60\' height=\'60\'%3E%3Crect fill=\'%23f0f0f0\' width=\'60\' height=\'60\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-size=\'24\'%3E📦%3C/text%3E%3C/svg%3E'}" 
-                        alt="Product" class="item-thumbnail">
+                <img src="${item.main_image_path || '/asset/images/default-product.svg'}" 
+                        alt="Product" class="item-thumbnail"
+                        onerror="this.src='/asset/images/default-product.svg'">
                 <div class="item-details">
                     <div class="item-name">${escapeHtml(item.product_name)}</div>
                     <div class="item-quantity">Qty: ${item.quantity} × Rp ${formatRupiah(item.price_at_order)}</div>
@@ -117,38 +409,113 @@ function closeDetailModal() {
     document.getElementById('detailModal').classList.remove('active');
 }
 
+// Confirmation modal functions
+let pendingOrderId = null;
+
+function showConfirmModal(orderId) {
+    pendingOrderId = orderId;
+    const modal = document.getElementById('confirmModal');
+    modal.classList.add('active');
+}
+
+function closeConfirmModal() {
+    pendingOrderId = null;
+    const modal = document.getElementById('confirmModal');
+    modal.classList.remove('active');
+}
+
 function confirmDelivery(orderId) {
-    if (!confirm('Apakah Anda yakin barang sudah diterima?')) {
-        return;
-    }
+    // Show custom modal instead of browser confirm
+    showConfirmModal(orderId);
+}
+
+async function proceedConfirmDelivery() {
+    if (!pendingOrderId) return;
+
+    const confirmBtn = document.getElementById('confirmDeliveryBtn');
+    const cancelBtn = document.getElementById('cancelDeliveryBtn');
+    
+    confirmBtn.disabled = true;
+    cancelBtn.disabled = true;
+    confirmBtn.textContent = 'Memproses...';
 
     showLoading();
 
-    fetch(`/orders/confirm/${orderId}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': CSRF_TOKEN
+    const csrfToken = getCsrfToken();
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `/orders/${pendingOrderId}/confirm`, true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken);
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+            hideLoading();
+            
+            // Reset buttons
+            confirmBtn.disabled = false;
+            cancelBtn.disabled = false;
+            confirmBtn.textContent = 'Ya, Saya Sudah Terima';
+            
+            if (xhr.status === 200) {
+                const contentType = xhr.getResponseHeader('content-type');
+                
+                if (contentType && contentType.includes('application/json')) {
+                    try {
+                        const data = JSON.parse(xhr.responseText);
+                        closeConfirmModal();
+                        
+                        if (data.success) {
+                            Toast.success('Berhasil!', data.message || 'Pesanan telah diselesaikan. Terima kasih!');
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1500);
+                        } else {
+                            Toast.error('Gagal!', data.message || 'Gagal konfirmasi order');
+                        }
+                    } catch (e) {
+                        closeConfirmModal();
+                        console.error('JSON Parse Error:', e);
+                        Toast.error('Error!', 'Terjadi kesalahan saat memproses data');
+                    }
+                } else {
+                    closeConfirmModal();
+                    console.error('Server returned non-JSON response');
+                    Toast.error('Error!', 'Server returned non-JSON response');
+                }
+            } else {
+                closeConfirmModal();
+                console.error('HTTP error! status:', xhr.status);
+                
+                let errorMessage = 'Terjadi kesalahan';
+                try {
+                    const errorData = JSON.parse(xhr.responseText);
+                    if (errorData.message) {
+                        errorMessage = errorData.message;
+                    }
+                } catch (e) {
+                    errorMessage = `HTTP error! status: ${xhr.status}`;
+                }
+                
+                Toast.error('Error!', errorMessage);
+            }
         }
-    })
-    .then(response => response.json())
-    .then(data => {
+    };
+    
+    xhr.onerror = function() {
         hideLoading();
+        closeConfirmModal();
         
-        if (data.success) {
-            showToast(data.message || 'Order berhasil dikonfirmasi!', 'success');
-            setTimeout(() => {
-                window.location.reload();
-            }, 1500);
-        } else {
-            showToast(data.message || 'Gagal konfirmasi order', 'error');
-        }
-    })
-    .catch(error => {
-        hideLoading();
-        console.error('Error:', error);
-        showToast('Network error: ' + error.message, 'error');
-    });
+        confirmBtn.disabled = false;
+        cancelBtn.disabled = false;
+        confirmBtn.textContent = 'Ya, Saya Sudah Terima';
+        
+        console.error('Network error occurred');
+        Toast.error('Error!', 'Terjadi kesalahan jaringan');
+    };
+    
+    xhr.send();
 }
 
 function showLoading() {
@@ -159,16 +526,7 @@ function hideLoading() {
     document.getElementById('loadingOverlay').classList.remove('active');
 }
 
-function showToast(message, type = 'success') {
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.textContent = message;
-    document.body.appendChild(toast);
-
-    setTimeout(() => {
-        toast.remove();
-    }, 4000);
-}
+// showToast function is now provided by toast.js component
 
 function formatRupiah(number) {
     return new Intl.NumberFormat('id-ID').format(number);
@@ -192,16 +550,21 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Close modal on outside click
 document.getElementById('detailModal').addEventListener('click', function(e) {
     if (e.target === this) {
         closeDetailModal();
     }
 });
 
-// Close modal on ESC key
+document.getElementById('confirmModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeConfirmModal();
+    }
+});
+
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         closeDetailModal();
+        closeConfirmModal();
     }
 });

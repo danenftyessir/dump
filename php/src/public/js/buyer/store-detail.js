@@ -54,9 +54,27 @@ function initializeEventListeners() {
         });
     }
 
-    if (categoryFilter) categoryFilter.addEventListener('change', () => { currentPage = 1; loadProducts(); });
-    if (minPriceInput) minPriceInput.addEventListener('change', () => { currentPage = 1; loadProducts(); });
-    if (maxPriceInput) maxPriceInput.addEventListener('change', () => { currentPage = 1; loadProducts(); });
+    if (categoryFilter) {
+        categoryFilter.addEventListener('change', () => { 
+            currentPage = 1; 
+            loadProducts(); 
+        });
+    }
+    
+    if (minPriceInput) {
+        minPriceInput.addEventListener('change', () => { 
+            currentPage = 1; 
+            loadProducts(); 
+        });
+    }
+    
+    if (maxPriceInput) {
+        maxPriceInput.addEventListener('change', () => { 
+            currentPage = 1; 
+            loadProducts(); 
+        });
+    }
+    
     if (sortBySelect) {
         sortBySelect.addEventListener('change', function(e) {
             const selectedOption = e.target.options[e.target.selectedIndex];
@@ -67,7 +85,19 @@ function initializeEventListeners() {
         });
     }
     
-    if (resetFiltersBtn) resetFiltersBtn.addEventListener('click', resetFilters);
+    if (resetFiltersBtn) {
+        resetFiltersBtn.addEventListener('click', resetFilters);
+    }
+
+    // items per page
+    const itemsPerPageSelect = document.getElementById('itemsPerPage');
+    if (itemsPerPageSelect) {
+        itemsPerPageSelect.addEventListener('change', function(e) {
+            filterState.limit = parseInt(e.target.value);
+            currentPage = 1;
+            loadProducts();
+        });
+    }
 
     const btnPrevPage = document.getElementById('btnPrevPage');
     const btnNextPage = document.getElementById('btnNextPage');
@@ -84,15 +114,23 @@ function loadProducts(isInitialLoad = false) {
         showLoadingState();
     }
 
-    // collect filter values
-    filterState.categoryId = document.getElementById('categoryFilter').value;
-    filterState.minPrice = document.getElementById('minPrice').value;
-    filterState.maxPrice = document.getElementById('maxPrice').value;
-    filterState.search = document.getElementById('mainSearchInput').value;
+    // collect filter values safely
+    const categoryFilter = document.getElementById('categoryFilter');
+    const minPriceInput = document.getElementById('minPrice');
+    const maxPriceInput = document.getElementById('maxPrice');
+    const searchInput = document.getElementById('mainSearchInput');
+    const sortSelect = document.getElementById('sortBy');
+    
+    filterState.categoryId = categoryFilter ? categoryFilter.value : '';
+    filterState.minPrice = minPriceInput ? minPriceInput.value : '';
+    filterState.maxPrice = maxPriceInput ? maxPriceInput.value : '';
+    filterState.search = searchInput ? searchInput.value : '';
 
-    const selectedSort = document.getElementById('sortBy').options[document.getElementById('sortBy').selectedIndex];
-    filterState.sortBy = selectedSort.value;
-    filterState.sortOrder = selectedSort.dataset.order || 'DESC';
+    if (sortSelect && sortSelect.selectedIndex >= 0) {
+        const selectedSort = sortSelect.options[sortSelect.selectedIndex];
+        filterState.sortBy = selectedSort.value;
+        filterState.sortOrder = selectedSort.dataset.order || 'DESC';
+    }
 
     // build query parameters
     const params = new URLSearchParams({
@@ -130,6 +168,7 @@ function loadProducts(isInitialLoad = false) {
                     showError(data.message || 'Gagal memuat data produk.');
                 }
             } catch (e) {
+                console.error('JSON Parse Error:', e);
                 showError('Gagal memproses respons dari server.');
             }
         } else {
@@ -157,46 +196,73 @@ function renderProducts(products) {
     }
 
     productsGrid.style.display = 'grid';
-    productsGrid.innerHTML = products.map(product => createProductCard(product)).join('');
+    
+    // Bersihkan grid dan isi dengan kartu produk dari template
+    productsGrid.innerHTML = '';
+    products.forEach(product => {
+        const productCard = createProductCard(product);
+        productsGrid.appendChild(productCard);
+    });
     
     initializeAddToCartButtons();
 }
 
+// Buat kartu produk menggunakan template HTML
 function createProductCard(product) {
-    const price = formatPrice(product.price);
-    const imagePath = product.main_image_path 
-        ? `/uploads/products/${escapeHtml(product.main_image_path)}` 
-        : '/asset/placeholder-product.jpg';
+    // Ambil template dari HTML
+    const template = document.getElementById('productCardTemplate');
+    const clone = template.content.cloneNode(true);
     
-    const isOutOfStock = product.stock <= 0;
-    const stockClass = isOutOfStock ? 'out-of-stock' : '';
-
-    let cartButtonHtml = '';
-    if (IS_LOGGED_IN && IS_BUYER && !isOutOfStock) {
-        cartButtonHtml = `<button class="btn-add-to-cart" data-product-id="${product.product_id}">
-                            <span class="icon icon-cart"></span>
-                          </button>`;
+    // Data produk
+    const price = formatPrice(product.price);
+    const imagePath = product.main_image_path || '/asset/placeholder-product.jpg';
+    const stockText = product.stock > 0 ? `Stok: ${product.stock}` : 'Stok Habis';
+    
+    // Ambil elemen dari template
+    const cardElement = clone.querySelector('.product-card');
+    const imageElement = clone.querySelector('.product-image');
+    const badgeElement = clone.querySelector('.product-badge');
+    const nameElement = clone.querySelector('.product-name');
+    const storeElement = clone.querySelector('.product-store');
+    const priceElement = clone.querySelector('.product-price');
+    const stockElement = clone.querySelector('.product-stock');
+    
+    // Set class untuk out of stock
+    if (product.stock === 0) {
+        cardElement.classList.add('out-of-stock');
     }
-
-    return `
-        <div class="product-card ${stockClass}">
-            <a href="/product/${product.product_id}" class="product-link">
-                <div class="product-image-wrapper">
-                    <img src="${imagePath}" 
-                         alt="${escapeHtml(product.product_name)}" 
-                         class="product-image"
-                         loading="lazy"
-                         onerror="this.src='/asset/placeholder-product.jpg'">
-                </div>
-                <div class="product-content">
-                    <h3 class="product-name">${escapeHtml(product.product_name)}</h3>
-                    <p class="product-price">${price}</p>
-                    <p class="product-store">${escapeHtml(product.store_name)}</p>
-                </div>
-            </a>
-            ${cartButtonHtml}
-        </div>
-    `;
+    
+    // Set click handler
+    cardElement.onclick = () => goToProduct(product.product_id);
+    
+    // Isi data ke template
+    imageElement.src = imagePath;
+    imageElement.alt = product.product_name;
+    imageElement.onerror = function() { this.src = '/asset/placeholder-product.jpg'; };
+    
+    nameElement.textContent = product.product_name;
+    storeElement.textContent = product.store_name;
+    priceElement.textContent = price;
+    
+    // Set stock text hanya jika ada stok
+    if (product.stock > 0) {
+        stockElement.textContent = stockText;
+    } else {
+        stockElement.style.display = 'none';
+    }
+    
+    // Set badge jika diperlukan
+    if (product.stock === 0) {
+        badgeElement.textContent = 'Stok Habis';
+        badgeElement.className = 'product-badge out-of-stock-badge';
+        badgeElement.style.display = 'block';
+    } else if (product.stock < 10 && product.stock > 0) {
+        badgeElement.textContent = 'Stok Terbatas';
+        badgeElement.className = 'product-badge';
+        badgeElement.style.display = 'block';
+    }
+    
+    return clone;
 }
 
 function updatePagination(pagination) {
@@ -264,6 +330,16 @@ function resetFilters() {
     document.getElementById('minPrice').value = '';
     document.getElementById('maxPrice').value = '';
     document.getElementById('sortBy').value = 'created_at';
+    document.getElementById('itemsPerPage').value = '12';
+    
+    // Reset filter state
+    filterState.search = '';
+    filterState.categoryId = '';
+    filterState.minPrice = '';
+    filterState.maxPrice = '';
+    filterState.sortBy = 'created_at';
+    filterState.sortOrder = 'DESC';
+    filterState.limit = 12;
     
     currentPage = 1;
     loadProducts();
@@ -276,8 +352,8 @@ function initializeAddToCartButtons() {
         if (button.dataset.listenerAttached) return;
 
         button.addEventListener('click', function(e) {
-            e.preventDefault(); // Hentikan navigasi link
-            e.stopPropagation(); // Hentikan event klik pada card
+            e.preventDefault(); 
+            e.stopPropagation();
             
             const productId = this.dataset.productId;
             handleAddToCartClick(productId, this);
@@ -290,7 +366,7 @@ function initializeAddToCartButtons() {
 function handleAddToCartClick(productId, buttonElement) {
     buttonElement.disabled = true;
     const originalIcon = buttonElement.innerHTML;
-    buttonElement.innerHTML = '<span class="spinner-cart"></span>'; // Tampilkan spinner kecil
+    buttonElement.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="spinner-cart"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>';
 
     const data = "product_id=" + encodeURIComponent(productId) + 
                  "&quantity=1" + // Default tambah 1 dari grid
@@ -328,28 +404,44 @@ function handleAddToCartClick(productId, buttonElement) {
 }
 
 function showLoadingState() {
-    document.getElementById('loadingState').style.display = 'grid';
-    document.getElementById('productsGrid').style.display = 'none';
-    document.getElementById('emptyState').style.display = 'none';
-    document.getElementById('paginationContainer').style.display = 'none';
+    const loadingState = document.getElementById('loadingState');
+    const productsGrid = document.getElementById('productsGrid');
+    const emptyState = document.getElementById('emptyState');
+    const paginationContainer = document.getElementById('paginationContainer');
+    
+    if (loadingState) loadingState.style.display = 'block';
+    if (productsGrid) productsGrid.style.display = 'none';
+    if (emptyState) emptyState.style.display = 'none';
+    if (paginationContainer) paginationContainer.style.display = 'none';
 }
 
 function hideAllStates() {
-    document.getElementById('loadingState').style.display = 'none';
-    document.getElementById('productsGrid').style.display = 'none';
-    document.getElementById('emptyState').style.display = 'none';
+    const loadingState = document.getElementById('loadingState');
+    const productsGrid = document.getElementById('productsGrid');
+    const emptyState = document.getElementById('emptyState');
+    
+    if (loadingState) loadingState.style.display = 'none';
+    if (productsGrid) productsGrid.style.display = 'none';
+    if (emptyState) emptyState.style.display = 'none';
 }
 
 function showError(message) {
     hideAllStates();
     const emptyState = document.getElementById('emptyState');
-    emptyState.style.display = 'block';
-    emptyState.querySelector('h3').textContent = 'Terjadi Kesalahan';
-    emptyState.querySelector('p').textContent = message;
+    if (emptyState) {
+        emptyState.style.display = 'block';
+        const h3Element = emptyState.querySelector('h3');
+        const pElement = emptyState.querySelector('p');
+        if (h3Element) h3Element.textContent = 'Terjadi Kesalahan';
+        if (pElement) pElement.textContent = message;
+    }
 }
 
 function updateProductsCount(total) {
-    document.getElementById('productsCount').textContent = `Menampilkan ${total} Produk`;
+    const productsCountEl = document.getElementById('productsCount');
+    if (productsCountEl) {
+        productsCountEl.textContent = `Menampilkan ${total} Produk`;
+    }
 }
 
 function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
@@ -392,4 +484,8 @@ function updateCartBadge(count) {
         badge.textContent = count;
         badge.style.display = count > 0 ? 'flex' : 'none';
     }
+}
+
+function goToProduct(productId) {
+    window.location.href = `/product/${productId}`;
 }

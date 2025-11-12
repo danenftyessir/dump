@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 60 60">
+  <rect fill="#f8f9fa" width="60" height="60" rx="8"/>
+  <rect x="10" y="10" width="40" height="26" fill="#e9ecef" rx="4"/>
+  <circle cx="18" cy="18" r="4" fill="#dee2e6"/>
+  <path d="M10 30l12-8 8 5 10-7 10 6v10H10z" fill="#dee2e6"/>
+  <rect x="15" y="40" width="30" height="8" fill="#6c757d" rx="2"/>
+  <text x="30" y="47" text-anchor="middle" font-family="Arial" font-size="8" fill="white">PRODUCT</text>
+</svg>

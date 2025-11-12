@@ -69,4 +69,15 @@ class CartItem extends Model
         
         return $stmt->execute();
     }
+
+    // Get total quantity dari semua item di keranjang buyer
+    public function getTotalQuantityByBuyer(int $buyerId): int {
+        $sql = "SELECT SUM(quantity) as total FROM {$this->table} WHERE buyer_id = :buyer_id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':buyer_id', $buyerId, PDO::PARAM_INT);
+        $stmt->execute();
+        
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return (int)($result['total'] ?? 0);
+    }
 }

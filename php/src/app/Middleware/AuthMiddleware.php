@@ -5,21 +5,24 @@ namespace Middleware;
 use Service\AuthService;
 use Service\CSRFService;
 use Service\RateLimitService;
+use Core\Request;
 
 class AuthMiddleware
 {
-    private $authService;
-    private $csrfService;
-    private $rateLimitService;
+    private AuthService $authService;
+    private CSRFService $csrfService;
+    private RateLimitService $rateLimitService;
+    private Request $request;
 
-    // constructor
-    public function __construct(AuthService $authService, CSRFService $csrfService, RateLimitService $rateLimitService) {
+    // Ctor
+    public function __construct(AuthService $authService, CSRFService $csrfService, RateLimitService $rateLimitService, Request $request) {
         $this->authService = $authService;
         $this->csrfService = $csrfService;
         $this->rateLimitService = $rateLimitService;
+        $this->request = $request;
     }
 
-    // helper: cek apakah request adalah ajax
+    // Cek apakah request adalah ajax
     private function isAjaxRequest() {
         // Check header X-Requested-With
         $isXhrHeader = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
@@ -36,7 +39,7 @@ class AuthMiddleware
         return $isXhrHeader || $isJsonContent || $isApiPath;
     }
 
-    // helper: return json error
+    // Return json error
     private function jsonError($message, $code = 400) {
         http_response_code($code);
         header('Content-Type: application/json');
@@ -104,25 +107,34 @@ class AuthMiddleware
 
     // verifikasi token csrf
     public function handleCSRF($next) {
-        $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+        $method = $this->request->method();
         
         if (in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'])) {
             // ambil token dari berbagai sumber
             $token = $_POST['csrf_token'] ?? 
                      $_POST['_token'] ?? 
-                     $_SERVER['HTTP_X_CSRF_TOKEN'] ??
+                     $_SERVER['HTTP_X_CSRF_TOKEN'] ?? 
                      '';
 
+            // debug log
+            error_log('csrf validation - method: ' . $method);
+            error_log('csrf token received: ' . substr($token, 0, 20) . '...');
+            error_log('csrf token from session: ' . substr($_SESSION['csrf_token'] ?? '', 0, 20) . '...');
+
             if (!$this->csrfService->verify($token)) {
+                error_log('csrf validation failed!');
+                
                 if ($this->isAjaxRequest()) {
                     $this->jsonError('token keamanan tidak valid', 403);
                 }
 
                 $this->authService->setFlashMessage('error', 'token keamanan tidak valid. silakan coba lagi');
-                $referer = $_SERVER['HTTP_REFERER'] ?? '/';
+                $referer = $this->request->getReferer();
                 header("Location: " . $referer);
                 exit();
             }
+            
+            error_log('csrf validation success!');
         }
 
         return $next();
@@ -137,7 +149,7 @@ class AuthMiddleware
                 }
                 
                 $this->authService->setFlashMessage('error', 'terlalu banyak percobaan. silakan coba lagi nanti');
-                $referer = $_SERVER['HTTP_REFERER'] ?? '/';
+                $referer = $this->request->getReferer();
                 header("Location: " . $referer);
                 exit();
             }

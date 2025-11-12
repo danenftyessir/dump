@@ -48,12 +48,16 @@ $router->get('/', 'ProductDiscoveryController@index');
 
 // API for Top Up Balance (with API-specific middleware)
 $router->post('/api/user/topup', 'Controller\BalanceController@topUp')
-       ->middleware(['api-auth']);
+       ->middleware(['auth', 'csrf']);
+
+// API for Get Current Balance
+$router->get('/api/user/balance', 'Controller\BalanceController@getCurrentBalance')
+       ->middleware(['auth']);
 
 // API for Fetching Products with Filters
 $router->get('/api/products', 'ProductDiscoveryController@getProducts');
 
-// Product Detail Page
+// Product Detail Page (CSRF token needed for add to cart)
 $router->get('/product/{id}', 'ProductDiscoveryController@showProduct');
 
 // Store Detail Page
@@ -146,11 +150,7 @@ $router->get('/seller/orders/export', 'Controller\SellerOrderController@export')
 $router->get('/seller/orders', 'Controller\SellerOrderController@index')
        ->middleware(['auth', 'seller']);
 
-// API for Get Orders
-$router->get('/api/seller/orders', 'Controller\SellerOrderController@getOrders')
-       ->middleware(['auth', 'seller']);
-
-// API for Get Order Detail
+// API for Get Order Detail (must be before /api/seller/orders to avoid route conflict)
 $router->get('/api/seller/orders/{id}', 'Controller\SellerOrderController@getOrderDetail')
        ->middleware(['auth', 'seller']);
 
@@ -166,5 +166,5 @@ $router->post('/api/seller/orders/reject/{id}', 'Controller\SellerOrderControlle
 $router->post('/api/seller/orders/set-delivery/{id}', 'Controller\SellerOrderController@setDelivery')
        ->middleware(['auth', 'seller', 'csrf']);
 
-// Debungging route
-$router->get('/clear-session', 'AuthController@clearSession');
+// API for Get CSRF Token
+$router->get('/api/csrf-token', 'AuthController@getCsrfToken');

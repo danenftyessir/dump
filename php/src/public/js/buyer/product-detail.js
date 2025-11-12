@@ -49,7 +49,8 @@ function handleFormSubmission() {
         // Ambil data form
         const productId = form.elements['product_id'].value;
         const quantity = form.elements['quantity'].value;
-        const token = form.elements['_token'].value;
+        const tokenInput = document.getElementById('csrf_token_input') || form.elements['_token'];
+        const token = tokenInput ? tokenInput.value : '';
 
         // Siapkan data untuk dikirim (format x-www-form-urlencoded)
         const data = "product_id=" + encodeURIComponent(productId) + 
@@ -65,16 +66,25 @@ function handleFormSubmission() {
         xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
 
         xhr.onload = function() {
+            console.log('Response status:', xhr.status);
+            console.log('Response text:', xhr.responseText);
+            
             if (xhr.status >= 200 && xhr.status < 300) {
                 const response = JSON.parse(xhr.responseText);
                 if (response.success) {
-                    showToast(response.message, 'success');
+                    Toast.success('Berhasil!', response.message);
                     updateCartBadge(response.data.total_items);
                 } else {
-                    showToast(response.message || 'Gagal menambahkan produk.', 'error');
+                    Toast.error('Gagal menambahkan', response.message || 'Terjadi kesalahan saat menambahkan produk ke keranjang.');
                 }
             } else {
-                showToast('Terjadi kesalahan server: ' + xhr.status, 'error');
+                // Parse error response untuk mendapatkan pesan error yang detail
+                try {
+                    const errorResponse = JSON.parse(xhr.responseText);
+                    Toast.error('Error Server', errorResponse.message || `Terjadi kesalahan server: ${xhr.status}`);
+                } catch (e) {
+                    Toast.error('Error Server', `Terjadi kesalahan server: ${xhr.status} - ${xhr.responseText}`);
+                }
             }
             
             submitButton.innerHTML = originalButtonText;
@@ -82,7 +92,7 @@ function handleFormSubmission() {
         };
         
         xhr.onerror = function() {
-            showToast('Gagal terhubung ke server.', 'error');
+            Toast.error('Koneksi Gagal', 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.');
             submitButton.innerHTML = originalButtonText;
             submitButton.disabled = false;
         };
@@ -106,27 +116,6 @@ function initializeTabs() {
             document.getElementById(tabId).classList.add('active');
         });
     });
-}
-
-function showToast(message, type = 'info') {
-    const container = document.getElementById('toastContainer');
-    if (!container) return;
-    
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    toast.textContent = message;
-
-    container.appendChild(toast);
-
-    setTimeout(() => { toast.classList.add('show'); }, 100);
-    setTimeout(() => {
-        toast.classList.remove('show');
-        setTimeout(() => {
-            if (container.contains(toast)) {
-                container.removeChild(toast);
-            }
-        }, 500); 
-    }, 3000);
 }
 
 function updateCartBadge(count) {

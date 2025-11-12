@@ -16,7 +16,7 @@ class Container
 
     // get instance dari dependency
     public function get($key) {
-        // cek apakah sudah ada instance (singleton)
+        // cek apakah sudah ada instance
         if (isset($this->instances[$key])) {
             return $this->instances[$key];
         }

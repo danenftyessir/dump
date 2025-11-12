@@ -104,6 +104,11 @@
     padding: 8px;
     animation: dropdownSlide 0.2s ease;
     display: none;
+    z-index: 1000;
+}
+
+.user-dropdown.show {
+    display: block !important;
 }
 
 @keyframes dropdownSlide {
@@ -164,7 +169,6 @@
         font-size: 1.25rem;
     }
 
-    /* Ensure user dropdown is visible on mobile */
     .user-dropdown {
         position: fixed;
         right: 16px;

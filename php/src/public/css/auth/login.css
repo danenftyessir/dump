@@ -26,7 +26,7 @@ body {
 
 .left-panel {
     flex: 1;
-    background-color: #FFD500; /* Kuning */
+    background-color: #FFD500;
     padding: 50px;
     position: relative;
     color: #000;
@@ -68,7 +68,6 @@ body {
     display: block; 
 }
 
-/* --- BAGIAN KANAN (Form) --- */
 .right-panel {
     flex: 1;
     background: white;
@@ -120,27 +119,40 @@ body {
     border-color: #FFD500; 
 }
 
-.input-group .icon { 
+.input-icon { 
     position: absolute; 
     left: 15px; 
-    top: 50%; 
+    top: 65%; 
     transform: translateY(-50%); 
     color: #888; 
-    font-size: 16px; 
+    width: 20px;
+    height: 20px;
+    z-index: 2;
 }
 
 .password-group .password-toggle {
     position: absolute;
     right: 15px;
-    top: 50%;
+    top: 65%;
     transform: translateY(-50%);
+    background: transparent;
+    border: none;
     color: #888;
     cursor: pointer;
-    font-size: 16px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     transition: color 0.2s;
 }
 .password-group .password-toggle:hover { 
     color: #333; 
+}
+
+.password-toggle svg {
+    width: 20px;
+    height: 20px;
+    transition: color 0.2s;
 }
 
 .login-btn {

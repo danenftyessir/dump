@@ -41,7 +41,7 @@ $userBalance = (int)($currentUser['balance']);
             </a>
 
             <!-- balance display -->
-            <button class="navbar-balance" id="openTopUpModalBtn">
+            <button class="navbar-balance" id="openTopUpModalBtn" onclick="openTopupModal()">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
                     <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/>
                     <path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/>
@@ -98,50 +98,11 @@ $userBalance = (int)($currentUser['balance']);
     </div>
 </nav>
 
-<!-- modal top-up saldo -->
-<div id="topUpModal" class="modal" style="display: none;">
-    <div class="modal-overlay" id="topUpModalOverlay"></div>
-    <div class="modal-content">
-        <button class="modal-close-btn" id="closeTopUpModalBtn">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"/>
-                <line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-        </button>
-        <div class="modal-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/>
-                <path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/>
-                <path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/>
-            </svg>
-        </div>
-        <h3>Top Up Saldo</h3>
-        <p>Pilih nominal top-up atau masukkan jumlah sendiri (minimal Rp 10.000)</p>
-        
-        <!-- Preset amounts -->
-        <div class="topup-presets">
-            <button type="button" class="preset-btn" data-amount="10000">Rp 10.000</button>
-            <button type="button" class="preset-btn" data-amount="25000">Rp 25.000</button>
-            <button type="button" class="preset-btn" data-amount="50000">Rp 50.000</button>
-            <button type="button" class="preset-btn" data-amount="100000">Rp 100.000</button>
-            <button type="button" class="preset-btn" data-amount="200000">Rp 200.000</button>
-            <button type="button" class="preset-btn" data-amount="500000">Rp 500.000</button>
-        </div>
+<?php 
+include __DIR__ . '/topup-modal.php';
+?>
 
-        <!-- Custom amount input -->
-        <form id="topUpForm" onsubmit="handleTopUp(event)">
-            <input type="hidden" name="_token" value="<?php echo $_SESSION['csrf_token'] ?? ''; ?>">
-            <div class="input-group">
-                <label for="topUpAmount">Jumlah Top-Up:</label>
-                <div class="currency-input">
-                    <span class="currency-prefix">Rp</span>
-                    <input type="number" id="topUpAmount" name="amount" min="10000" step="1000" placeholder="10000" required>
-                </div>
-            </div>
-            <div class="modal-actions">
-                <button type="button" id="cancelTopUpBtn" class="btn-secondary">Batal</button>
-                <button type="submit" class="btn-primary" id="topUpSubmitBtn">Top Up Sekarang</button>
-            </div>
-        </form>
-    </div>
-</div>
+<script>
+    // Define CSRF token for topup modal
+    const csrfToken = '<?php echo $_token ?? ''; ?>';
+</script>

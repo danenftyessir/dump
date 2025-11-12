@@ -6,6 +6,7 @@ use Model\Order;
 use Model\OrderItem;
 use Model\User;
 use Model\Product;
+use Service\CartService;
 use Exception;
 
 class OrderService
@@ -14,13 +15,65 @@ class OrderService
     private OrderItem $orderItemModel;
     private User $userModel;
     private Product $productModel;
+    private CartService $cartService;
 
     // Ctor
-    public function __construct(Order $orderModel, OrderItem $orderItemModel, User $userModel, Product $productModel) {
+    public function __construct(Order $orderModel, OrderItem $orderItemModel, User $userModel, Product $productModel, CartService $cartService) {
         $this->orderModel = $orderModel;
         $this->orderItemModel = $orderItemModel;
         $this->userModel = $userModel;
         $this->productModel = $productModel;
+        $this->cartService = $cartService;
+    }
+
+    // Complete order placement process
+    public function placeOrder(int $buyerId, string $shippingAddress, int $confirmedTotalPrice): array {
+        $buyer = $this->userModel->find($buyerId);
+        $cartSummary = $this->cartService->getCartSummary($buyerId);
+        $grandTotal = $cartSummary['grand_total'];
+
+        // Validate checkout data
+        if ($grandTotal === 0) {
+            throw new Exception('Keranjang kosong.');
+        }
+        if ($confirmedTotalPrice != $grandTotal) {
+            throw new Exception('Total harga tidak cocok. Silakan ulangi checkout.');
+        }
+        if ($buyer['balance'] < $grandTotal) {
+            throw new Exception('Saldo tidak mencukupi. Silakan top up.');
+        }
+        if (!$shippingAddress) {
+            throw new Exception('Alamat pengiriman wajib diisi.');
+        }
+
+        // Process transaction atomically
+        $this->userModel->beginTransaction();
+        
+        try {
+            // Deduct buyer balance
+            $this->userModel->deductBalance($buyerId, $grandTotal);
+
+            // Create orders and reduce stock
+            $this->prosessCheckoutTransaction($buyerId, $cartSummary, $shippingAddress);
+
+            // Clear cart
+            $this->cartService->clearCart($buyerId);
+            
+            // Commit transaction
+            $this->userModel->commit();
+            
+            // Get updated buyer data
+            $updatedBuyer = $this->userModel->find($buyerId);
+            
+            return [
+                'total_price' => $grandTotal,
+                'new_balance' => $updatedBuyer['balance']
+            ];
+            
+        } catch (Exception $e) {
+            $this->userModel->rollback();
+            throw $e;
+        }
     }
 
     // Manage proses checkout (make order, order items, and reduce stok)
@@ -103,11 +156,21 @@ class OrderService
 
     // Memproses penerimaan order oleh buyer
     public function completeOrder(int $orderId, int $buyerId) {
-        $order = $this->orderModel->find($orderId);
+        $order = $this->orderModel->getOrderById($orderId);
 
-        // validasi kepemilikan dan status order
-        if (!$order || $order['status'] !== Order::STATUS_SHIPPED || $order['buyer_id'] !== $buyerId) {
-            throw new Exception("Order tidak valid untuk diselesaikan.");
+        // validasi order exists
+        if (!$order) {
+            throw new Exception("Order tidak ditemukan.");
+        }
+
+        // validasi kepemilikan
+        if ($order['buyer_id'] !== $buyerId) {
+            throw new Exception("Anda tidak memiliki akses ke order ini.");
+        }
+
+        // validasi status order
+        if ($order['status'] !== Order::STATUS_ON_DELIVERY) {
+            throw new Exception("Order hanya bisa dikonfirmasi jika status sedang On Delivery. Status saat ini: " . $order['status']);
         }
 
         $this->userModel->beginTransaction();
@@ -122,7 +185,7 @@ class OrderService
             // update status order
             $this->orderModel->update($orderId, [
                 'status' => Order::STATUS_RECEIVED, 
-                'received_at' => 'CURRENT_TIMESTAMP'
+                'received_at' => date('Y-m-d H:i:s')
             ]);
             
             $this->userModel->commit();
@@ -136,22 +199,39 @@ class OrderService
     }
 
     // Memproses persetujuan order oleh seller
-    public function approveOrder(int $orderId, int $sellerId, string $deliveryTime) {
+    public function approveOrder(int $orderId, int $storeId, string $deliveryTime) {
         $order = $this->orderModel->find($orderId);
-        
-        if (!$order || $order['store_id'] != $this->userModel->findByUserId($sellerId)['store_id']) {
+
+        if (!$order || $order['store_id'] != $storeId) {
             throw new Exception('Pesanan tidak ditemukan atau Anda tidak memiliki akses.');
         }
         if ($order['status'] !== Order::STATUS_WAITING_APPROVAL) {
             throw new Exception('Pesanan ini tidak bisa disetujui.');
         }
 
-        $deliveryTimestamp = date('Y-m-d H:i:s', strtotime("+$deliveryTime"));
+        // Convert date string (YYYY-MM-DD) to datetime timestamp
+        $deliveryTimestamp = date('Y-m-d H:i:s', strtotime($deliveryTime . ' 23:59:59'));
 
         return $this->orderModel->update($orderId, [
             'status' => Order::STATUS_APPROVED,
             'confirmed_at' => date('Y-m-d H:i:s'),
             'delivery_time' => $deliveryTimestamp
+        ]);
+    }
+
+    // Mengubah status order menjadi on_delivery oleh seller
+    public function setOrderOnDelivery(int $orderId, int $storeId) {
+        $order = $this->orderModel->find($orderId);
+
+        if (!$order || $order['store_id'] !== $storeId) {
+            throw new Exception('Pesanan tidak ditemukan atau Anda tidak memiliki akses.');
+        }
+        if ($order['status'] !== Order::STATUS_APPROVED) {
+            throw new Exception('Pesanan hanya bisa dikirim jika statusnya sudah disetujui.');
+        }
+
+        return $this->orderModel->update($orderId, [
+            'status' => Order::STATUS_ON_DELIVERY
         ]);
     }
 }

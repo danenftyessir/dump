@@ -3,62 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Order History - Nimonspedia</title>
+    <meta name="csrf-token" content="<?php echo htmlspecialchars($_token ?? ''); ?>">
+    <title>Order History</title>
+    <link rel="stylesheet" href="/css/buyer/base.css">
     <link rel="stylesheet" href="/css/buyer/order-history.css">
-    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/components/navbar-base.css">
+    <link rel="stylesheet" href="/css/components/navbar-buyer.css">
+    <link rel="stylesheet" href="/css/components/toast.css">
+    <link rel="stylesheet" href="/css/components/footer.css">
 </head>
 <body>
+    <?php include __DIR__ . '/../components/navbar-buyer.php'; ?>
+    
     <div class="container">
         <!-- Page Header -->
         <div class="page-header">
             <h1>Order History</h1>
+            <div class="sort-control">
+                <label for="sortOrder">Urutkan:</label>
+                <select id="sortOrder" class="sort-select">
+                    <option value="desc">Terbaru</option>
+                    <option value="asc">Terlama</option>
+                </select>
+            </div>
         </div>
 
         <!-- Filter Tabs -->
         <div class="filter-tabs">
-            <a href="/orders" class="filter-tab <?= !isset($_GET['status']) ? 'active' : '' ?>">
+            <button type="button" class="filter-tab active" data-status="">
                 All Orders
                 <?php if (isset($statusCounts['all'])): ?>
                     <span class="tab-badge"><?= $statusCounts['all'] ?></span>
                 <?php endif; ?>
-            </a>
-            <a href="/orders?status=waiting_approval" class="filter-tab <?= ($_GET['status'] ?? '') === 'waiting_approval' ? 'active' : '' ?>">
+            </button>
+            <button type="button" class="filter-tab" data-status="waiting_approval">
                 Waiting Approval
                 <?php if (isset($statusCounts['waiting_approval'])): ?>
                     <span class="tab-badge"><?= $statusCounts['waiting_approval'] ?></span>
                 <?php endif; ?>
-            </a>
-            <a href="/orders?status=approved" class="filter-tab <?= ($_GET['status'] ?? '') === 'approved' ? 'active' : '' ?>">
+            </button>
+            <button type="button" class="filter-tab" data-status="approved">
                 Approved
                 <?php if (isset($statusCounts['approved'])): ?>
                     <span class="tab-badge"><?= $statusCounts['approved'] ?></span>
                 <?php endif; ?>
-            </a>
-            <a href="/orders?status=on_delivery" class="filter-tab <?= ($_GET['status'] ?? '') === 'on_delivery' ? 'active' : '' ?>">
+            </button>
+            <button type="button" class="filter-tab" data-status="on_delivery">
                 On Delivery
                 <?php if (isset($statusCounts['on_delivery'])): ?>
                     <span class="tab-badge"><?= $statusCounts['on_delivery'] ?></span>
                 <?php endif; ?>
-            </a>
-            <a href="/orders?status=received" class="filter-tab <?= ($_GET['status'] ?? '') === 'received' ? 'active' : '' ?>">
+            </button>
+            <button type="button" class="filter-tab" data-status="received">
                 Received
                 <?php if (isset($statusCounts['received'])): ?>
                     <span class="tab-badge"><?= $statusCounts['received'] ?></span>
                 <?php endif; ?>
-            </a>
-            <a href="/orders?status=rejected" class="filter-tab <?= ($_GET['status'] ?? '') === 'rejected' ? 'active' : '' ?>">
+            </button>
+            <button type="button" class="filter-tab" data-status="rejected">
                 Rejected
                 <?php if (isset($statusCounts['rejected'])): ?>
                     <span class="tab-badge"><?= $statusCounts['rejected'] ?></span>
                 <?php endif; ?>
-            </a>
+            </button>
         </div>
 
         <!-- Orders List -->
+        <div id="ordersContainer">
         <?php if (empty($orders)): ?>
             <!-- Empty State -->
             <div class="empty-state">
-                <div class="empty-icon"></div>
+                <div class="empty-icon">
+                    <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="8" cy="21" r="1"/>
+                            <circle cx="19" cy="21" r="1"/>
+                            <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>
+                    </svg>
+                </div>
                 <h3>Belum Ada Pesanan</h3>
                 <p>Anda belum memiliki riwayat pesanan. Mulai belanja sekarang!</p>
                 <a href="/products" class="btn-shop">Mulai Belanja</a>
@@ -100,21 +121,24 @@
                     <!-- Store Info -->
                     <div class="store-info">
                         <img 
-                            src="<?= htmlspecialchars($order['store_logo_path'] ?? 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'40\' height=\'40\'%3E%3Crect fill=\'%23ddd\' width=\'40\' height=\'40\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-size=\'20\'%3E🏪%3C/text%3E%3C/svg%3E') ?>" 
+                            src="<?= htmlspecialchars($order['store_logo_path'] ?? '/asset/images/default-store.svg') ?>" 
                             alt="Store Logo"
                             class="store-logo"
+                            onerror="this.src='/asset/images/default-store.svg'"
                         >
                         <span class="store-name"><?= htmlspecialchars($order['store_name']) ?></span>
                     </div>
 
                     <!-- Order Items -->
                     <div class="order-items">
-                        <?php foreach ($order['items'] as $item): ?>
+                        <?php if (!empty($order['items'])): ?>
+                            <?php foreach ($order['items'] as $item): ?>
                             <div class="order-item">
                                 <img 
-                                    src="<?= htmlspecialchars($item['main_image_path'] ?? 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'60\' height=\'60\'%3E%3Crect fill=\'%23f0f0f0\' width=\'60\' height=\'60\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-size=\'24\'%3E📦%3C/text%3E%3C/svg%3E') ?>" 
+                                    src="<?= htmlspecialchars($item['main_image_path'] ?? '/asset/images/default-product.svg') ?>" 
                                     alt="Product"
                                     class="item-thumbnail"
+                                    onerror="this.src='/asset/images/default-product.svg'"
                                 >
                                 <div class="item-details">
                                     <div class="item-name"><?= htmlspecialchars($item['product_name']) ?></div>
@@ -125,6 +149,13 @@
                                 </div>
                             </div>
                         <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="order-item">
+                                <div class="item-details">
+                                    <div class="item-name">Tidak ada item dalam pesanan ini</div>
+                                </div>
+                            </div>
+                        <?php endif; ?>
                     </div>
 
                     <!-- Refund Info (for rejected orders) -->
@@ -158,16 +189,22 @@
                             <button class="btn btn-detail" onclick="showOrderDetail(<?= htmlspecialchars(json_encode($order), ENT_QUOTES) ?>)">
                                 Detail Order
                             </button>
+                            <?php // Tombol konfirmasi hanya muncul jika waktu pengiriman sudah terlewat ?>
                             <?php if ($isDeliveryOverdue): ?>
                                 <button class="btn btn-confirm" onclick="confirmDelivery(<?= $order['order_id'] ?>)">
                                     Konfirmasi Diterima
                                 </button>
                             <?php endif; ?>
+                            <?php // TESTING ONLY: Uncomment line below to allow confirmation anytime ?>
+                            <?php // if ($order['status'] === 'on_delivery'): ?>
+                            <?php //     <button class="btn btn-confirm" onclick="confirmDelivery(<?= $order['order_id'] ?>)">Konfirmasi Diterima</button> ?>
+                            <?php // endif; ?>
                         </div>
                     </div>
                 </div>
             <?php endforeach; ?>
         <?php endif; ?>
+        </div>
     </div>
 
     <!-- Order Detail Modal -->
@@ -183,16 +220,45 @@
         </div>
     </div>
 
+    <!-- Confirm Delivery Modal -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2 class="modal-title">Konfirmasi Penerimaan</h2>
+                <button class="modal-close" onclick="closeConfirmModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="text-align: center; padding: 20px 0;">
+                    <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin: 0 auto 20px;">
+                        <circle cx="40" cy="40" r="36" fill="#FFF3CD" stroke="#FFC107" stroke-width="2"/>
+                        <path d="M40 25V45" stroke="#FFC107" stroke-width="4" stroke-linecap="round"/>
+                        <circle cx="40" cy="55" r="3" fill="#FFC107"/>
+                    </svg>
+                    <p style="font-size: 18px; font-weight: 600; margin-bottom: 10px; color: #333;">Apakah Anda yakin?</p>
+                    <p style="color: #666; margin-bottom: 0;">Barang sudah diterima dalam kondisi baik?</p>
+                    <p style="color: #999; font-size: 14px; margin-top: 10px;">Dana akan ditransfer ke seller setelah konfirmasi</p>
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; gap: 10px; padding: 20px; border-top: 1px solid #e0e0e0;">
+                <button id="cancelDeliveryBtn" onclick="closeConfirmModal()" class="btn btn-secondary" style="flex: 1; padding: 12px; border: 1px solid #ddd; background: white; color: #666; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                    Batal
+                </button>
+                <button id="confirmDeliveryBtn" onclick="proceedConfirmDelivery()" class="btn btn-primary" style="flex: 1; padding: 12px; border: none; background: #00a860; color: white; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                    Ya, Saya Sudah Terima
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <?php include __DIR__ . '/../components/footer.php'; ?>
+
     <!-- Loading Overlay -->
     <div id="loadingOverlay" class="loading-overlay">
         <div class="spinner"></div>
     </div>
 
-    <script>
-        const CSRF_TOKEN = '<?= $_token ?? '' ?>';
-
-        
-    </script>
+    <script src="/js/components/toast.js"></script>
+    <script src="/js/components/navbar-buyer.js"></script>
     <script src="/js/buyer/order-history.js"></script>
 </body>
 </html>

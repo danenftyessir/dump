@@ -7,6 +7,7 @@ use Model\Product;
 use Model\Category;
 use Service\AuthService;
 use Service\CSRFService;
+use Core\Request;
 use Exception;
 
 class ProductDiscoveryController extends Controller
@@ -15,13 +16,15 @@ class ProductDiscoveryController extends Controller
     private Category $categoryModel;
     private AuthService $authService;
     private CSRFService $csrfService;
+    private Request $request;
 
     // Ctor
-    public function __construct(Product $productModel, Category $categoryModel, AuthService $authService, CSRFService $csrfService) {
+    public function __construct(Product $productModel, Category $categoryModel, AuthService $authService, CSRFService $csrfService, Request $request) {
         $this->productModel = $productModel;
         $this->categoryModel = $categoryModel;
         $this->authService = $authService;
         $this->csrfService = $csrfService;
+        $this->request = $request;
     }
 
     // Home / Produk Discovery Page
@@ -33,12 +36,15 @@ class ProductDiscoveryController extends Controller
             // cek status login
             $isLoggedIn = $this->authService->isLoggedIn();
             $isBuyer = $this->authService->isBuyer();
+            $currentUser = $this->authService->getCurrentUser();
 
             // render view
-            return $this->view('buyer/home', [ # Home/product discovery page
+            return $this->view('buyer/home', [ // Home/product discovery page
                 'categories' => $categories,
                 'isLoggedIn' => $isLoggedIn,
                 'isBuyer'    => $isBuyer,
+                'currentUser'=> $currentUser,
+                '_token'     => $this->csrfService->getToken(),
             ]);
             
         } catch (Exception $e) {
@@ -51,14 +57,14 @@ class ProductDiscoveryController extends Controller
     public function getProducts() {
         try {
             $filters = [
-                'search'        => $_GET['search'] ?? null,
-                'category_id'   => $_GET['category_id'] ?? null,
-                'min_price'     => $_GET['min_price'] ?? null,
-                'max_price'     => $_GET['max_price'] ?? null,
-                'sort_by'       => $_GET['sort_by'] ?? 'newest',
-                'sort_order'    => $_GET['sort_order'] ?? 'desc',
-                'page'          => (int)($_GET['page'] ?? 1),
-                'limit'         => (int)($_GET['limit'] ?? 10)
+                'search'        => $this->request->get('search'),
+                'category_id'   => $this->request->get('category_id'),
+                'min_price'     => $this->request->get('min_price'),
+                'max_price'     => $this->request->get('max_price'),
+                'sort_by'       => $this->request->get('sort_by', 'newest'),
+                'sort_order'    => $this->request->get('sort_order', 'desc'),
+                'page'          => (int)($this->request->get('page', 1)),
+                'limit'         => (int)($this->request->get('limit', 10))
             ];
 
             $result = $this->productModel->getProductsForDiscovery($filters);
@@ -91,13 +97,23 @@ class ProductDiscoveryController extends Controller
             $isLoggedIn = $this->authService->isLoggedIn();
             $isBuyer = $this->authService->isBuyer();
             $csrfToken = $this->csrfService->getToken();
+            $currentUser = $this->authService->getCurrentUser();
+            
+            // Debug CSRF token
+            error_log('=== ProductDiscoveryController@showProduct DEBUG ===');
+            error_log('CSRF Token generated: ' . substr($csrfToken, 0, 20) . '...');
+            error_log('Session ID: ' . session_id());
+            error_log('Is logged in: ' . ($isLoggedIn ? 'yes' : 'no'));
+            error_log('Is buyer: ' . ($isBuyer ? 'yes' : 'no'));
 
             // render view
             return $this->view('buyer/product-detail', [
                 'product' => $product,
                 'isLoggedIn' => $isLoggedIn,
                 'isBuyer' => $isBuyer,
-                'csrfToken' => $csrfToken
+                '_token' => $csrfToken,
+                'csrfToken' => $csrfToken,
+                'currentUser' => $currentUser
             ]);
         } catch (Exception $e) {
             error_log('Error di ProductDiscoveryController@showProduct: ' . $e->getMessage());
@@ -110,26 +126,14 @@ class ProductDiscoveryController extends Controller
     // API untuk search suggestions - BONUS
     public function getSearchSuggestions() {
         try {
-            $keyword = $this->input('q', '');
+            $keyword = $this->request->get('q', '');
             
             if (strlen($keyword) < 2) {
                 return $this->success('Search Suggestions', ['suggestions' => []]);
             }
             
-            // query untuk mendapatkan suggestions
-            $sql = "SELECT DISTINCT product_name 
-                    FROM products 
-                    WHERE product_name LIKE :keyword 
-                    AND stock > 0
-                    ORDER BY product_name ASC 
-                    LIMIT 10";
-            
-            $db = $this->productModel->getConnection();
-            $stmt = $db->prepare($sql);
-            $stmt->bindValue(':keyword', '%' . $keyword . '%');
-            $stmt->execute();
-            
-            $suggestions = $stmt->fetchAll(\PDO::FETCH_COLUMN);
+            // ambil suggestions dari model
+            $suggestions = $this->productModel->getProductSuggestions($keyword, 10);
             
             return $this->success('Search Suggestions', ['suggestions' => $suggestions]);
             
