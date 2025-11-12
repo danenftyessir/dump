@@ -30,6 +30,8 @@ SELECT setval(pg_get_serial_sequence('stores', 'store_id'), COALESCE(MAX(store_i
 -- 3. SEEDING PRODUCTS
 -- (15 produk untuk Toko 1, 15 produk untuk Toko 2)
 -- ====================================================================
+-- Reset product sequence to start from 1
+
 INSERT INTO "products" ("product_name", "description", "price", "stock", "store_id", "main_image_path") VALUES
 ('Tas Rotan Bulat', 'Tas rotan bulat selempang, cocok untuk fashion.', 150000, 50, 1, NULL),
 ('Topi Pantai Jerami', 'Topi jerami lebar untuk melindungi dari matahari.', 75000, 30, 1, NULL),
@@ -104,4 +106,50 @@ INSERT INTO "category_items" ("product_id", "category_id") VALUES
 (30, 4), (30, 10); -- Blangkon
 
 -- Selesai Transaksi
+-- ====================================================================
+-- 5. AUTO-ADD: Tambah produk sampai total 10.000 (jika diperlukan)
+-- Script ini menghitung berapa produk yang kurang dan men-generate baris
+-- Product akan didistribusikan ke semua store yang ada secara round-robin
+-- ====================================================================
+DO $$
+BEGIN
+	-- hanya jalankan jika masih kurang dari 10000
+	IF (SELECT COUNT(*) FROM products) < 10000 THEN
+		WITH params AS (
+			SELECT array_agg(store_id ORDER BY store_id) AS store_ids
+			FROM stores
+		), counts AS (
+			SELECT store_ids, cardinality(store_ids) AS store_count FROM params
+		), needed AS (
+			SELECT (10000 - (SELECT COUNT(*) FROM products))::int AS to_add
+		)
+		INSERT INTO products (product_name, description, price, stock, store_id, main_image_path, created_at, updated_at)
+		SELECT
+			-- build realistic product names by combining adjective, material and type
+			(counts.adjectives[((gs-1) % array_length(counts.adjectives,1)) + 1] || ' ' ||
+			 counts.materials[((gs-1) % array_length(counts.materials,1)) + 1] || ' ' ||
+			 counts.types[((gs-1) % array_length(counts.types,1)) + 1]) AS product_name,
+			-- short descriptive sentence
+			('Original ' || counts.materials[((gs-1) % array_length(counts.materials,1)) + 1] || ' ' || counts.types[((gs-1) % array_length(counts.types,1)) + 1] || ' crafted by Indonesian artisans.') AS description,
+			-- price and stock variation
+			(50000 + ((gs * 37) % 450000))::integer AS price,
+			(1 + ((gs * 13) % 200))::integer AS stock,
+			counts.store_ids[((gs-1) % counts.store_count) + 1]::int AS store_id,
+			NULL AS main_image_path,
+			NOW() AS created_at,
+			NOW() AS updated_at
+		FROM (
+			SELECT store_ids, store_count,
+				   ARRAY['Vintage','Handmade','Classic','Modern','Artisanal','Premium','Eco','Traditional','Elegant','Minimalist']::text[] AS adjectives,
+				   ARRAY['Rotan','Batik','Kayu','Kulit','Kain','Keramik','Kanvas','Bambu','Perak','Anyaman']::text[] AS materials,
+				   ARRAY['Bag','Hat','Statue','Keychain','Table Cloth','Wallet','Lamp','Wayang','Cutlery Set','Necklace','Basket','Batik Cloth','Miniature','Mug Set','Bracelet','Wind Chime','Shawl','Ashtray','Shoes','Keris','Laptop Bag','Noken','Mask','Plate','Tissue Box','Bros','Candle','Belt','Bookmark','Blangkon']::text[] AS types
+			FROM counts
+		) AS counts, needed, generate_series(1, (SELECT to_add FROM needed)) AS gs;
+
+		-- advance sequence
+		PERFORM setval(pg_get_serial_sequence('products','product_id'), (SELECT COALESCE(MAX(product_id),1) FROM products));
+	END IF;
+END
+$$;
+
 COMMIT;
